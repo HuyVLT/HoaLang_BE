@@ -2,15 +2,12 @@ import passport from 'passport';
 import { Strategy as LocalStrategy } from 'passport-local';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import bcrypt from 'bcrypt';
-import { User } from '../models/User.model';
+import { User } from '../models/core/User.model';
 
-// Passport Local Strategy
+// ── Local Strategy ────────────────────────────────────────────────────────────
 passport.use(
   new LocalStrategy(
-    {
-      usernameField: 'email',
-      passwordField: 'password',
-    },
+    { usernameField: 'email', passwordField: 'password' },
     async (email, password, done) => {
       try {
         const user = await User.findOne({ email }).select('+password');
@@ -35,7 +32,7 @@ passport.use(
   )
 );
 
-// Passport Google OAuth Strategy
+// ── Google OAuth Strategy ─────────────────────────────────────────────────────
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || 'mock_google_id';
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || 'mock_google_secret';
 const GOOGLE_CALLBACK_URL = '/api/v1/auth/google/callback';
@@ -50,11 +47,11 @@ passport.use(
     },
     async (_req, _accessToken, _refreshToken, profile, done) => {
       try {
+        // Check existing Google user
         let user = await User.findOne({ googleId: profile.id });
-        if (user) {
-          return done(null, user);
-        }
+        if (user) return done(null, user);
 
+        // Link to existing email account
         const email = profile.emails?.[0]?.value;
         if (email) {
           user = await User.findOne({ email });
@@ -68,28 +65,29 @@ passport.use(
           }
         }
 
+        // Create new Google user
         const newUser = new User({
           googleId: profile.id,
-          email: email || `${profile.id}@google.com`,
-          name: profile.displayName || 'Google User',
+          email: email ?? `${profile.id}@google.com`,
+          name: profile.displayName ?? 'Google User',
           avatar: profile.photos?.[0]?.value,
           role: 'USER',
         });
 
         await newUser.save();
         return done(null, newUser);
-      } catch (err: any) {
-        return done(err);
+      } catch (err: unknown) {
+        return done(err as Error);
       }
     }
   )
 );
 
-passport.serializeUser((user: any, done) => {
-  done(null, user.id);
+passport.serializeUser((user: Express.User, done) => {
+  done(null, (user as unknown as { id: string }).id);
 });
 
-passport.deserializeUser(async (id, done) => {
+passport.deserializeUser(async (id: string, done) => {
   try {
     const user = await User.findById(id);
     done(null, user);

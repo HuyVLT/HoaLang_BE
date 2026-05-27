@@ -8,6 +8,7 @@
     "build": "tsc",
     "start": "node -r tsconfig-paths/register dist/app.js",
     "seed": "ts-node -r tsconfig-paths/register src/seeds/seed.ts",
+    "seed:tenants": "ts-node -r tsconfig-paths/register src/seeds/tenant.seed.ts",
     "test": "jest"
   },
   "keywords": [],

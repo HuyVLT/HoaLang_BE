@@ -6,63 +6,108 @@ import morgan from 'morgan';
 import passport from 'passport';
 import dotenv from 'dotenv';
 
-// Load environment variables
 dotenv.config();
 
-import { connectDB } from './config/database';
-import './config/passport'; // Loads Passport strategy configurations
+import { connectCoreDB } from './config/coreDatabase';
+import { closeAllTenantConnections } from './config/tenantConnection';
+import './config/passport';
 import authRoutes from './modules/auth/auth.routes';
+import productRoutes from './modules/product/product.routes';
+import { resolveTenant, requireTenantDb } from './middleware/tenant.middleware';
 import { errorHandler } from './middleware/error.middleware';
 import { setupSwagger } from './config/swagger';
 import { sendResponse } from './utils/response';
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT ?? 5000;
 
-// Security and utility middlewares
+// ── Security & utility middleware ─────────────────────────────────────────────
 app.use(helmet());
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(morgan('dev'));
 
-// Rate limiting security layer
+// ── Tenant-context Morgan format ──────────────────────────────────────────────
+// Logs: [tenant: bat-trang] GET /api/v1/products 200 12ms
+morgan.token('tenant', (req: express.Request) => {
+  const tenantReq = req as express.Request & { tenant?: { slug: string } };
+  return tenantReq.tenant?.slug ?? 'global';
+});
+
+app.use(
+  morgan(':method :url :status :response-time ms — [tenant: :tenant]')
+);
+
+// ── Rate limiting ─────────────────────────────────────────────────────────────
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per window
+  max: 100,
   standardHeaders: true,
   legacyHeaders: false,
   handler: (_req, res) => {
-    sendResponse(res, 429, false, null, 'Too many requests from this IP address. Please try again in 15 minutes.');
-  }
+    sendResponse(
+      res,
+      429,
+      false,
+      null,
+      'Too many requests from this IP address. Please try again in 15 minutes.'
+    );
+  },
 });
 app.use('/api', limiter);
 
-// Initialize passport strategies
+// ── Passport ──────────────────────────────────────────────────────────────────
 app.use(passport.initialize());
 
-// Configure and attach interactive Swagger Explorer
+// ── Swagger docs ──────────────────────────────────────────────────────────────
 setupSwagger(app);
 
-// Wire API module routes
+// ── Core (non-tenant) routes ──────────────────────────────────────────────────
+// Auth operates globally against hoalang_core — NO tenant middleware here
 app.use('/api/v1/auth', authRoutes);
 
-// Fallback page not found (404)
-app.use((req, res): void => {
-  sendResponse(res, 404, false, null, `Route resource ${req.originalUrl} not found.`);
+// ── Tenant-scoped routes ──────────────────────────────────────────────────────
+app.use('/api/v1/products', resolveTenant, requireTenantDb, productRoutes);
+
+// ── Health check ──────────────────────────────────────────────────────────────
+app.get('/api/health', (_req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Centralized error interceptor handler
+// ── 404 fallback ──────────────────────────────────────────────────────────────
+app.use((req, res): void => {
+  sendResponse(res, 404, false, null, `Route ${req.originalUrl} not found.`);
+});
+
+// ── Centralized error handler ─────────────────────────────────────────────────
 app.use(errorHandler);
 
-// Establish database connection and start listening
+// ── Bootstrap ─────────────────────────────────────────────────────────────────
 const bootExpressApp = async (): Promise<void> => {
-  await connectDB();
-  app.listen(PORT, () => {
-    console.log(`Express server is active and running on: http://localhost:${PORT}`);
+  // Connect to the shared core database first
+  await connectCoreDB();
+  console.log('[App] hoalang_core database ready.');
+
+  const server = app.listen(PORT, () => {
+    console.log(`[App] Server running → http://localhost:${PORT}`);
+    console.log(`[App] Swagger docs  → http://localhost:${PORT}/api/docs`);
   });
+
+  // ── Graceful shutdown ─────────────────────────────────────────────────────
+  const shutdown = async (signal: string): Promise<void> => {
+    console.log(`\n[App] ${signal} received — shutting down gracefully...`);
+    server.close(async () => {
+      await closeAllTenantConnections();
+      console.log('[App] All tenant connections closed.');
+      process.exit(0);
+    });
+  };
+
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  process.on('SIGINT', () => shutdown('SIGINT'));
 };
 
 bootExpressApp().catch((err) => {
-  console.error('Fatal crash on bootstrapping application:', err);
+  console.error('[App] Fatal crash on bootstrap:', err);
+  process.exit(1);
 });
