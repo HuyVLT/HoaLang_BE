@@ -13,6 +13,7 @@ import { closeAllTenantConnections } from './config/tenantConnection';
 import './config/passport';
 import authRoutes from './modules/auth/auth.routes';
 import productRoutes from './modules/product/product.routes';
+import tenantConfigRoutes from './modules/tenantConfig/tenantConfig.routes';
 import { resolveTenant, requireTenantDb } from './middleware/tenant.middleware';
 import { errorHandler } from './middleware/error.middleware';
 import { setupSwagger } from './config/swagger';
@@ -65,6 +66,7 @@ setupSwagger(app);
 // ── Core (non-tenant) routes ──────────────────────────────────────────────────
 // Auth operates globally against hoalang_core — NO tenant middleware here
 app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/tenant', tenantConfigRoutes);
 
 // ── Tenant-scoped routes ──────────────────────────────────────────────────────
 app.use('/api/v1/products', resolveTenant, requireTenantDb, productRoutes);

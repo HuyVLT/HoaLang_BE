@@ -1,4 +1,6 @@
 import { Tenant, ITenant, TenantDocument } from '../../models/core/Tenant.model';
+import { PageConfig } from '../../models/core/PageConfig.model';
+import { getStarterTemplate } from '../tenantConfig/starterTemplates';
 import { getTenantConnection } from '../../config/tenantConnection';
 import { getTenantModels } from '../shared/modelFactory/modelFactory';
 
@@ -113,6 +115,22 @@ export class ProvisioningService {
     });
 
     console.log(`[Provisioning] Default CMS 'home' page seeded for '${slug}'.`);
+
+    // ── 6.5 Seed default PageConfig for customization in hoalang_core ─────────
+    const starterTemplate = getStarterTemplate(slug.toLowerCase());
+    await PageConfig.findOneAndUpdate(
+      { tenantId: slug.toLowerCase() },
+      {
+        $setOnInsert: {
+          tenantId: slug.toLowerCase(),
+          templateId: starterTemplate.templateId,
+          theme: starterTemplate.theme,
+          sections: starterTemplate.sections,
+        }
+      },
+      { upsert: true, new: true }
+    );
+    console.log(`[Provisioning] Default PageConfig seeded for '${slug}' in hoalang_core.`);
 
     return {
       tenant,
