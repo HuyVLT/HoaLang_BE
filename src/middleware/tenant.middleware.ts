@@ -35,8 +35,29 @@ export const resolveTenant = async (
       // Dev/test path: explicit slug header takes precedence
       tenant = await Tenant.findOne({ slug: slugHeader.toLowerCase() });
     } else if (host) {
-      // Production path: resolve by domain
+      // 1. Try to resolve by exact domain first (production path)
       tenant = await Tenant.findOne({ domain: host });
+
+      // 2. If not found, try to resolve by subdomain (local development path)
+      if (!tenant) {
+        let subdomain = '';
+        if (host.endsWith('.localhost')) {
+          subdomain = host.split('.localhost')[0];
+        } else if (host.endsWith('.hoalang.site')) {
+          subdomain = host.split('.hoalang.site')[0];
+        }
+
+        if (subdomain && subdomain !== 'localhost' && subdomain !== 'www') {
+          // Map subdomain to slug
+          const map: Record<string, string> = {
+            'battrang': 'bat-trang',
+            'vanphuc': 'van-phuc',
+            'nonnuoc': 'non-nuoc',
+          };
+          const slug = map[subdomain] || subdomain;
+          tenant = await Tenant.findOne({ slug });
+        }
+      }
     }
 
     // ── 2. Validate tenant existence and status ──────────────────────────────

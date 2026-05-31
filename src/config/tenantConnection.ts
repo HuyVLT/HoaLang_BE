@@ -6,9 +6,6 @@ import mongoose, { Connection } from 'mongoose';
  */
 const connectionPool = new Map<string, Connection>();
 
-const BASE_MONGO_URI =
-  process.env.TENANT_MONGODB_BASE_URI || 'mongodb://localhost:27017';
-
 /**
  * Get (or create + cache) a Mongoose Connection for a given tenant database.
  *
@@ -23,7 +20,38 @@ export const getTenantConnection = async (dbName: string): Promise<Connection> =
   }
 
   // 2. Build the full connection URI for the tenant database
-  const uri = `${BASE_MONGO_URI}/${dbName}`;
+  const getTenantUri = (targetDb: string): string => {
+    if (process.env.TENANT_MONGODB_BASE_URI) {
+      return `${process.env.TENANT_MONGODB_BASE_URI}/${targetDb}`;
+    }
+
+    const fullUri = process.env.MONGODB_URI;
+    if (fullUri) {
+      try {
+        const questionIndex = fullUri.indexOf('?');
+        const mainPart = questionIndex !== -1 ? fullUri.substring(0, questionIndex) : fullUri;
+        const optionsPart = questionIndex !== -1 ? fullUri.substring(questionIndex) : '';
+
+        const protocol = mainPart.startsWith('mongodb+srv://') ? 'mongodb+srv://' : 'mongodb://';
+        const withoutProtocol = mainPart.substring(protocol.length);
+        const slashIndex = withoutProtocol.indexOf('/');
+
+        let hostPart = withoutProtocol;
+        if (slashIndex !== -1) {
+          hostPart = withoutProtocol.substring(0, slashIndex);
+        }
+
+        return `${protocol}${hostPart}/${targetDb}${optionsPart}`;
+      } catch (e) {
+        console.error('[TenantDB] Error parsing connection URI:', e);
+        return fullUri;
+      }
+    }
+
+    return `mongodb://localhost:27017/${targetDb}`;
+  };
+
+  const uri = getTenantUri(dbName);
 
   try {
     const conn = mongoose.createConnection(uri, {
