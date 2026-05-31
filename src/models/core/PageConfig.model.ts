@@ -50,8 +50,6 @@ const PageConfigSchema = new Schema<IPageConfig>(
   { timestamps: true }
 );
 
-// Create quick query index
-PageConfigSchema.index({ tenantId: 1 }, { unique: true });
-
 export const PageConfig = model<IPageConfig>('PageConfig', PageConfigSchema);
 export default PageConfig;
+
