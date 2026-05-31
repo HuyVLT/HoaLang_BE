@@ -89,7 +89,7 @@ const seedDatabase = async (): Promise<void> => {
     console.log('Creating Admin account...');
     await User.create({
       email: 'admin@hoalang.vn',
-      name: 'Super Admin',
+      fullName: 'Super Admin',
       password: adminPassword,
       avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
       role: 'ADMIN',
@@ -99,23 +99,23 @@ const seedDatabase = async (): Promise<void> => {
 
     // 4. Create Village Owners
     console.log('Creating Village Owner accounts...');
-    const battrangOwner = await User.create({
+    const battrangOwner: any = await User.create({
       email: 'owner@battrang.vn',
-      name: 'Chủ Làng Bát Tràng',
+      fullName: 'Chủ Làng Bát Tràng',
       password: ownerPassword,
       role: 'VILLAGE_OWNER',
       locale: 'vi'
     });
-    const vanphucOwner = await User.create({
+    const vanphucOwner: any = await User.create({
       email: 'owner@vanphuc.vn',
-      name: 'Chủ Làng Vạn Phúc',
+      fullName: 'Chủ Làng Vạn Phúc',
       password: ownerPassword,
       role: 'VILLAGE_OWNER',
       locale: 'vi'
     });
-    const nonnuocOwner = await User.create({
+    const nonnuocOwner: any = await User.create({
       email: 'owner@nonuoc.vn',
-      name: 'Chủ Làng Non Nước',
+      fullName: 'Chủ Làng Non Nước',
       password: ownerPassword,
       role: 'VILLAGE_OWNER',
       locale: 'vi'
@@ -126,7 +126,7 @@ const seedDatabase = async (): Promise<void> => {
     console.log('Creating Demo traveler account...');
     await User.create({
       email: 'traveler@gmail.com',
-      name: 'Du Khách Đam Mê Di Sản',
+      fullName: 'Du Khách Đam Mê Di Sản',
       password: userPassword,
       role: 'USER',
       locale: 'vi'

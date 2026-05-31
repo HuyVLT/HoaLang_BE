@@ -13,8 +13,22 @@ export const validateRequest = (schema: ZodSchema) => {
 
       // Update inputs with Zod-parsed and coerced types
       req.body = validated.body;
-      req.query = validated.query;
-      req.params = validated.params;
+      
+      if (validated.query) {
+        // Mutate existing keys to bypass read-only getter reference restrictions on req.query
+        for (const key in req.query) {
+          delete req.query[key];
+        }
+        Object.assign(req.query, validated.query);
+      }
+
+      if (validated.params) {
+        // Mutate existing keys to bypass read-only getter reference restrictions on req.params
+        for (const key in req.params) {
+          delete req.params[key];
+        }
+        Object.assign(req.params, validated.params);
+      }
 
       next();
     } catch (error) {
