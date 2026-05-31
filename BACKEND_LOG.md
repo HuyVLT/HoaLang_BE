@@ -23,6 +23,22 @@ Hệ thống Backend của HoaLang được viết trên nền tảng **Express 
 
 ## 2. Nhật ký Thay đổi chi tiết (Changelog)
 
+### [2026-06-01] Backend Environment Variables Configuration & Dependency Installation
+
+#### Tác vụ hoàn thành
+- Đồng bộ cấu hình môi trường phát triển chính thức (.env) cho ứng dụng Backend.
+- Thiết lập thông tin kết nối tới hệ thống MongoDB Atlas, SMTP Mailer gửi thư kích hoạt tài khoản song ngữ, cổng kết nối hình ảnh Cloudinary, Google OAuth 2.0 Single Sign-On (SSO) và các engine tìm kiếm Meilisearch.
+- Cài đặt và tích hợp thư viện `nodemailer` cùng kiểu dữ liệu `@types/nodemailer` bị thiếu giúp quá trình biên dịch TypeScript (`tsc`) hoàn thành thành công 100% không có lỗi.
+
+#### Chi tiết kỹ thuật & File thay đổi
+1. **Environment Variables Configuration**:
+   - Sửa đổi trong tệp [.env](file:///c:/Project%20Web/Multi-Tenant/HoaLang/hoalang-be/.env).
+   - Tích hợp thông tin xác thực SMTP passkey gửi thư song ngữ, thiết lập Cloudinary API Key/Secret, Google OAuth client credentials và cập nhật URI truy vấn kết nối cụm cluster MongoDB Atlas chính thức.
+2. **Missing Dependency Installation**:
+   - Khởi chạy lệnh cài đặt thư viện `pnpm add nodemailer` tự động tích hợp các gói xác thực gửi thư điện tử giúp giải quyết lỗi biên dịch thiếu module `nodemailer` tại `src/utils/mailer.ts`.
+
+---
+
 ### [2026-05-31] Atlas Database Seeder and Connection Hoisting Fixes
 
 #### Tác vụ hoàn thành
