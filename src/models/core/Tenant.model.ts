@@ -46,10 +46,6 @@ const TenantSchema = new Schema<ITenant>(
   { timestamps: true }
 );
 
-// Optimize database queries with strict indexes
-TenantSchema.index({ slug: 1 }, { unique: true });
-TenantSchema.index({ domain: 1 }, { unique: true });
-TenantSchema.index({ dbName: 1 }, { unique: true });
-
 export const Tenant = model<ITenant>('Tenant', TenantSchema);
 export default Tenant;
+

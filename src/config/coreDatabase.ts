@@ -1,9 +1,5 @@
 import mongoose, { Connection } from 'mongoose';
 
-const CORE_DB_URI =
-  process.env.CORE_MONGODB_URI ||
-  `mongodb://localhost:27017/hoalang_core`;
-
 let coreConnection: Connection | null = null;
 
 /**
@@ -15,6 +11,11 @@ export const connectCoreDB = async (): Promise<Connection> => {
     return mongoose.connection;
   }
 
+  const CORE_DB_URI =
+    process.env.CORE_MONGODB_URI ||
+    process.env.MONGODB_URI ||
+    `mongodb://localhost:27017/hoalang_core`;
+
   try {
     await mongoose.connect(CORE_DB_URI, {
       maxPoolSize: 10,
@@ -24,7 +25,7 @@ export const connectCoreDB = async (): Promise<Connection> => {
       autoIndex: process.env.NODE_ENV !== 'production',
     });
 
-    console.log(`[CoreDB] Connected to hoalang_core`);
+    console.log(`[CoreDB] Connected to database successfully`);
     coreConnection = mongoose.connection;
     return mongoose.connection;
   } catch (error) {

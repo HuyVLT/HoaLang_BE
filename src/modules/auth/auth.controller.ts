@@ -3,6 +3,7 @@ import passport from 'passport';
 import { authService } from './auth.service';
 import { sendResponse } from '../../utils/response';
 import { AppError } from '../../middleware/error.middleware';
+import { uploadToCloudinary } from '../../utils/cloudinary';
 
 export class AuthController {
   /**
@@ -10,8 +11,21 @@ export class AuthController {
    */
   public register = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
+      // If a file is uploaded, send it to Cloudinary first
+      if (req.file) {
+        console.log('[AuthController] Uploading avatar file to Cloudinary...');
+        const avatarUrl = await uploadToCloudinary(req.file.buffer);
+        req.body.avatar = avatarUrl;
+      }
+
       const result = await authService.register(req.body);
-      sendResponse(res, 201, true, result, 'Registration successful.');
+      sendResponse(
+        res,
+        201,
+        true,
+        result,
+        'Đăng ký tài khoản thành công. Vui lòng kiểm tra email để kích hoạt tài khoản trong vòng 15 phút.'
+      );
     } catch (err) {
       next(err);
     }
@@ -32,11 +46,34 @@ export class AuthController {
         const userObj = user.toObject();
         delete userObj.password;
 
-        sendResponse(res, 200, true, { user: userObj, ...tokens }, 'Login successful.');
+        sendResponse(
+          res,
+          200,
+          true,
+          { user: userObj, ...tokens },
+          'Login successful.'
+        );
       } catch (loginErr) {
         next(loginErr);
       }
     })(req, res, next);
+  };
+
+  /**
+   * Activate / Verify account via token
+   */
+  public verifyAccount = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { token } = req.query;
+      if (!token || typeof token !== 'string') {
+        throw new AppError('Xác thực thất bại: thiếu mã kích hoạt.', 400);
+      }
+
+      const result = await authService.verifyAccount(token);
+      sendResponse(res, 200, true, result, 'Kích hoạt tài khoản thành công!');
+    } catch (err) {
+      next(err);
+    }
   };
 
   /**
@@ -99,10 +136,28 @@ export class AuthController {
 
         const { accessToken, refreshToken } = await authService.issueTokens(user);
 
-        // Redirect standard web clients passing Access & Refresh credentials in search queries
-        return res.redirect(
-          `${process.env.CLIENT_URL || 'http://localhost:3000'}/auth/callback?token=${accessToken}&refresh=${refreshToken}`
-        );
+        // Detect device redirection target from Google OAuth state
+        const state = req.query.state as string;
+        const isMobile = state === 'mobile';
+
+        const userObj = {
+          id: user.id || user._id,
+          email: user.email,
+          fullName: user.fullName,
+          role: user.role,
+          avatar: user.avatar,
+          walletBalance: user.walletBalance,
+        };
+
+        const serializedUser = encodeURIComponent(JSON.stringify(userObj));
+        const redirectBase = isMobile
+          ? 'hoalang://auth/callback'
+          : `${process.env.CLIENT_URL || 'http://localhost:3000'}/auth/callback`;
+
+        const redirectUrl = `${redirectBase}?accessToken=${accessToken}&refreshToken=${refreshToken}&user=${serializedUser}`;
+        
+        console.log(`[GoogleCallback] Redirecting ${isMobile ? 'mobile' : 'web'} user:`, redirectUrl);
+        return res.redirect(redirectUrl);
       } catch (oauthErr) {
         next(oauthErr);
       }
@@ -112,3 +167,4 @@ export class AuthController {
 
 export const authController = new AuthController();
 export default authController;
+

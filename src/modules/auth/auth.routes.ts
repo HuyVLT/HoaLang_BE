@@ -4,6 +4,7 @@ import { authController } from './auth.controller';
 import { protect } from '../../middleware/auth.middleware';
 import { validateRequest } from '../../middleware/validate.middleware';
 import { registerSchema, loginSchema } from './auth.dto';
+import { upload } from '../../middleware/upload.middleware';
 
 const router = Router();
 
@@ -23,28 +24,32 @@ const router = Router();
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             type: object
  *             required:
  *               - email
- *               - name
+ *               - fullName
  *               - password
+ *               - phone
  *             properties:
  *               email:
  *                 type: string
  *                 format: email
  *                 example: guest@gmail.com
- *               name:
+ *               fullName:
  *                 type: string
  *                 example: Nguyen Van A
  *               password:
  *                 type: string
  *                 format: password
- *                 example: guest123
+ *                 example: Guest@123
+ *               phone:
+ *                 type: string
+ *                 example: 0987654321
  *               avatar:
  *                 type: string
- *                 example: https://avatar.example.com
+ *                 format: binary
  *               role:
  *                 type: string
  *                 enum: [USER, VILLAGE_OWNER, ADMIN]
@@ -54,11 +59,16 @@ const router = Router();
  *                 example: vi
  *     responses:
  *       201:
- *         description: User profile created successfully and tokens issued
+ *         description: User profile created successfully and activation email sent
  *       400:
  *         description: Validation failed or email already exists
  */
-router.post('/register', validateRequest(registerSchema), authController.register);
+router.post(
+  '/register',
+  upload.single('avatar'),
+  validateRequest(registerSchema),
+  authController.register
+);
 
 /**
  * @openapi
@@ -79,7 +89,7 @@ router.post('/register', validateRequest(registerSchema), authController.registe
  *               email:
  *                 type: string
  *                 format: email
- *                 example: admin@restx.food
+ *                 example: admin@hoalang.vn
  *               password:
  *                 type: string
  *                 format: password
@@ -91,6 +101,27 @@ router.post('/register', validateRequest(registerSchema), authController.registe
  *         description: Incorrect email or password
  */
 router.post('/login', validateRequest(loginSchema), authController.login);
+
+/**
+ * @openapi
+ * /auth/verify-account:
+ *   get:
+ *     summary: Activate user account via email token
+ *     tags: [Auth]
+ *     parameters:
+ *       - in: query
+ *         name: token
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Account activation token
+ *     responses:
+ *       200:
+ *         description: Account successfully activated
+ *       400:
+ *         description: Invalid or expired activation token
+ */
+router.get('/verify-account', authController.verifyAccount);
 
 /**
  * @openapi
@@ -170,12 +201,18 @@ router.post('/logout', authController.logout);
  *       302:
  *         description: Redirects to Google authorization page
  */
-router.get(
-  '/google',
-  passport.authenticate('google', { scope: ['profile', 'email'], session: false })
-);
+router.get('/google', (req, res, next) => {
+  const isMobile = req.query.device === 'mobile' || /mobile/i.test(req.headers['user-agent'] || '');
+  const state = isMobile ? 'mobile' : 'desktop';
+  passport.authenticate('google', {
+    scope: ['profile', 'email'],
+    session: false,
+    state: state,
+  })(req, res, next);
+});
 
 // Callback routing after Google authorization redirects
 router.get('/google/callback', authController.googleCallback);
 
 export default router;
+
