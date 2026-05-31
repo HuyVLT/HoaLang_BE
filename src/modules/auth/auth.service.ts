@@ -130,6 +130,18 @@ export class AuthService {
       if (user.status === 'BLOCKED') {
         throw new AppError('Your account has been blocked. Please contact support.', 403);
       }
+      let hasChanges = false;
+      if (profile.avatar && user.avatar !== profile.avatar) {
+        user.avatar = profile.avatar;
+        hasChanges = true;
+      }
+      if (profile.fullName && user.fullName !== profile.fullName) {
+        user.fullName = profile.fullName;
+        hasChanges = true;
+      }
+      if (hasChanges) {
+        await user.save();
+      }
       return user;
     }
 
