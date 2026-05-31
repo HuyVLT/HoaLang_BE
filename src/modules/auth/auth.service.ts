@@ -1,14 +1,16 @@
-import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { User } from '../../models/core/User.model';
 import { AppError } from '../../middleware/error.middleware';
 import {
   generateAccessToken,
   generateRefreshToken,
+  generateVerifyToken,
+  verifyVerifyToken,
   verifyRefreshToken,
   TokenPayload,
 } from '../../utils/jwt';
 import { redisClient } from '../../config/redis';
+import { sendVerificationEmail } from '../../utils/mailer';
 
 export class AuthService {
   /**
@@ -16,46 +18,156 @@ export class AuthService {
    */
   public async register(payload: {
     email: string;
-    name: string;
-    password: string;
+    fullName: string;
+    password?: string;
+    phone?: string;
     avatar?: string;
     role?: 'USER' | 'VILLAGE_OWNER' | 'ADMIN';
     locale?: string;
-  }): Promise<{ user: Record<string, unknown>; accessToken: string; refreshToken: string }> {
-    const { email, name, password, avatar, role, locale } = payload;
+  }): Promise<Record<string, unknown>> {
+    const { email, fullName, password, phone, avatar, role, locale } = payload;
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       throw new AppError('Email address is already in use.', 400);
     }
 
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+    // Set expiration for unverified accounts to 15 minutes from now
+    const verificationExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
 
     const newUser = new User({
       email,
-      name,
-      password: hashedPassword,
+      fullName,
+      password, // hashed automatically by Mongoose pre-save hook
+      phone,
       avatar,
       role: role ?? 'USER',
       locale: locale ?? 'vi',
+      isVerified: false,
+      status: 'ACTIVE',
+      type: 'Local',
+      socialLogin: false,
+      verificationExpiresAt,
     });
 
     await newUser.save();
 
-    const tokenPayload: TokenPayload = {
-      userId: newUser.id as string,
-      role: newUser.role,
+    // Create a 15-minute VerifyToken containing email and type
+    const verifyToken = generateVerifyToken({
       email: newUser.email,
-    };
+      type: 'verification',
+    });
 
-    const accessToken = generateAccessToken(tokenPayload);
-    const refreshToken = generateRefreshToken(tokenPayload);
+    // Send registration activation email
+    try {
+      await sendVerificationEmail(newUser.email, newUser.fullName, verifyToken, newUser.locale);
+    } catch (mailError) {
+      console.error('[AuthService] Error sending verification email:', mailError);
+      // Don't crash the register process but log the error
+    }
 
     const userResponse = newUser.toObject() as unknown as Record<string, unknown>;
     delete userResponse.password;
 
-    return { user: userResponse, accessToken, refreshToken };
+    return userResponse;
+  }
+
+  /**
+   * Verify registration activation link
+   */
+  public async verifyAccount(token: string): Promise<Record<string, unknown>> {
+    try {
+      const decoded = verifyVerifyToken(token);
+      if (decoded.type !== 'verification') {
+        throw new AppError('Invalid token type for verification.', 400);
+      }
+
+      const user = await User.findOne({ email: decoded.email });
+      if (!user) {
+        throw new AppError('No unverified account found with this email.', 404);
+      }
+
+      if (user.isVerified) {
+        // If already verified, return the user immediately (idempotent behavior)
+        const userResponse = user.toObject() as unknown as Record<string, unknown>;
+        delete userResponse.password;
+        return userResponse;
+      }
+
+      // Check if user status is BLOCKED
+      if (user.status === 'BLOCKED') {
+        throw new AppError('This account has been blocked.', 403);
+      }
+
+      // Activate user and unset TTL deletion field
+      user.isVerified = true;
+      user.verificationExpiresAt = undefined;
+      await user.save();
+
+      const userResponse = user.toObject() as unknown as Record<string, unknown>;
+      delete userResponse.password;
+
+      return userResponse;
+    } catch (err: any) {
+      if (err.name === 'TokenExpiredError') {
+        throw new AppError('Verification link has expired. Please register again.', 400);
+      }
+      throw err;
+    }
+  }
+
+  /**
+   * Upsert social media profiles (Google)
+   */
+  public async upsertSocialMedia(profile: {
+    googleId: string;
+    email: string;
+    fullName: string;
+    avatar?: string;
+  }): Promise<InstanceType<typeof User>> {
+    let user = await User.findOne({ googleId: profile.googleId });
+    if (user) {
+      if (user.status === 'BLOCKED') {
+        throw new AppError('Your account has been blocked. Please contact support.', 403);
+      }
+      return user;
+    }
+
+    // Try linking with existing email account
+    user = await User.findOne({ email: profile.email });
+    if (user) {
+      if (user.status === 'BLOCKED') {
+        throw new AppError('Your account has been blocked. Please contact support.', 403);
+      }
+
+      // Link googleId and mark verified since email is validated by Google
+      user.googleId = profile.googleId;
+      user.type = 'GOOGLE';
+      user.socialLogin = true;
+      user.isVerified = true;
+      user.verificationExpiresAt = undefined; // Cancel any unverified self-deletion timer
+      if (!user.avatar) {
+        user.avatar = profile.avatar;
+      }
+      await user.save();
+      return user;
+    }
+
+    // Create a new verified user account via Google
+    const newUser = new User({
+      email: profile.email,
+      fullName: profile.fullName,
+      avatar: profile.avatar,
+      type: 'GOOGLE',
+      socialLogin: true,
+      googleId: profile.googleId,
+      isVerified: true, // Google email is pre-verified
+      status: 'ACTIVE',
+      role: 'USER',
+    });
+
+    await newUser.save();
+    return newUser;
   }
 
   /**
@@ -90,6 +202,10 @@ export class AuthService {
     const user = await User.findById(decoded.userId);
     if (!user) {
       throw new AppError('User belonging to this token no longer exists.', 401);
+    }
+
+    if (user.status === 'BLOCKED') {
+      throw new AppError('Your account is blocked.', 403);
     }
 
     const tokenPayload: TokenPayload = {

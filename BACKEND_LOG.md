@@ -50,3 +50,53 @@ Hệ thống Backend của HoaLang được viết trên nền tảng **Express 
 - Khi thiết lập index trong Mongoose Schemas, nếu trường đã có thuộc tính `unique: true` hoặc `index: true`, không khai báo thêm `schema.index({ field: 1 })` để tránh cảnh báo trùng lặp index.
 - Khi tạo thêm Tenant mới, hãy đảm bảo cập nhật danh sách tenant được phép truy cập trong file cấu hình và cơ sở dữ liệu tương ứng.
 
+### [2026-05-31] Complete Authentication Flow & Email Verification Integration
+
+#### Tác vụ hoàn thành
+- Triển khai toàn diện hệ thống Authentication Flow bảo mật (BE & FE) đáp ứng đầy đủ yêu cầu nghiệp vụ.
+- Thiết lập User Schema cải tiến: bổ sung `fullName`, `phone`, `avatar`, `type`, `socialLogin`, `googleId`, `isVerified`, `status`, `walletBalance`.
+- Cài đặt pre-save hook tự động băm mật khẩu bằng `bcrypt` trên model.
+- Thiết kế cơ chế tự động xóa tài khoản chưa kích hoạt sau 15 phút bằng MongoDB TTL index trên trường `verificationExpiresAt`.
+- Tích hợp email xác thực qua Nodemailer với giao diện HTML song ngữ sang trọng, tuân thủ bảng màu và phong cách nghệ thuật HoaLang (parchment, cream, lacquer, gold).
+- Triển khai middleware `checkAccessToken` chặn lập tức tài khoản `BLOCKED`.
+- Xây dựng tích hợp Google OAuth qua Passport.js hỗ trợ phát hiện thiết bị di động (mobile) qua query parameter và state, điều hướng deep-link tương ứng (`hoalang://auth/callback`) hoặc web client.
+
+#### Chi tiết kỹ thuật & File thay đổi
+1. **Models**:
+   - Sửa đổi [User.model.ts](file:///d:/HoaLang/HoaLang_BE/src/models/core/User.model.ts): bổ sung các thuộc tính và Mongoose hooks.
+2. **Utilities & Mailer**:
+   - Thêm mới [mailer.ts](file:///d:/HoaLang/HoaLang_BE/src/utils/mailer.ts): hàm `sendVerificationEmail` dùng `nodemailer`.
+   - Thêm mới [cloudinary.ts](file:///d:/HoaLang/HoaLang_BE/src/utils/cloudinary.ts): hàm stream buffer upload `uploadToCloudinary`.
+3. **Middleware**:
+   - Thêm mới [upload.middleware.ts](file:///d:/HoaLang/HoaLang_BE/src/middleware/upload.middleware.ts): multer memory storage.
+   - Sửa đổi [auth.middleware.ts](file:///d:/HoaLang/HoaLang_BE/src/middleware/auth.middleware.ts): bảo vệ API private và chặn tài khoản `BLOCKED`.
+4. **Auth Module**:
+   - Sửa đổi [auth.dto.ts](file:///d:/HoaLang/HoaLang_BE/src/modules/auth/auth.dto.ts): kiểm tra định dạng phone (10 số) và mật khẩu mạnh.
+   - Sửa đổi [auth.service.ts](file:///d:/HoaLang/HoaLang_BE/src/modules/auth/auth.service.ts): triển khai `register` (isVerified = false), `verifyAccount` (kích hoạt), và `upsertSocialMedia` (đồng bộ Google).
+   - Sửa đổi [passport.ts](file:///d:/HoaLang/HoaLang_BE/src/config/passport.ts): tinh chỉnh Local Strategy (kiểm tra status, isVerified) và Google Strategy.
+   - Sửa đổi [auth.routes.ts](file:///d:/HoaLang/HoaLang_BE/src/modules/auth/auth.routes.ts) & [auth.controller.ts](file:///d:/HoaLang/HoaLang_BE/src/modules/auth/auth.controller.ts): tích hợp upload avatar khi register, định tuyến Google OAuth theo thiết bị, và GET `/verify-account`.
+5. **Database Seeder**:
+   - Sửa đổi [seed.ts](file:///d:/HoaLang/HoaLang_BE/src/seeds/seed.ts): chuyển đổi trường `name` sang `fullName` và fix type casting cho Mongoose document.
+
+### [2026-06-01] Request Query Object Mutation Bug Fix
+
+#### Tác vụ hoàn thành
+- Khắc phục triệt để lỗi runtime crash `Cannot set property query of #<IncomingMessage> which has only a getter` khi thực hiện đăng ký tài khoản trên môi trường Next.js/Express.
+- Đảm bảo tính nhất quán của kiểu dữ liệu đầu vào sau khi được Zod ép kiểu và kiểm tra trong middleware validation.
+
+#### Chi tiết kỹ thuật & File thay đổi
+1. **Zod Validation Middleware Safe Re-assignment**:
+   - Thay đổi trong [validate.middleware.ts](file:///d:/HoaLang/HoaLang_BE/src/middleware/validate.middleware.ts).
+   - Thay thế việc ghi đè trực tiếp tham chiếu của đối tượng `req.query` và `req.params` (gây ra lỗi crash do Express thiết lập `req.query` làm getter chỉ đọc).
+   - Cải tiến bằng cách xóa toàn bộ các khóa cũ và sử dụng `Object.assign(req.query, validated.query)` (hoặc `req.params`) để cập nhật trực tiếp nội dung các thuộc tính bên trong mà không làm thay đổi con trỏ tham chiếu đối tượng cha, loại bỏ lỗi getter-only an toàn 100%.
+
+### [2026-06-01] Idempotent Account Verification Fix
+
+#### Tác vụ hoàn thành
+- Khắc phục lỗi hiển thị "Kích hoạt thất bại / Verification Failed" khi người dùng truy cập trang kích hoạt tài khoản dù tài khoản thực tế đã được xác thực (`isVerified = true`) và đăng nhập bình thường.
+- Cải thiện trải nghiệm xác thực song ngữ và khả năng chịu tải tốt hơn đối với các công cụ quét link tự động (email link scanners) của Gmail/Outlook.
+
+#### Chi tiết kỹ thuật & File thay đổi
+1. **Idempotency in Auth Service**:
+   - Thay đổi trong [auth.service.ts](file:///d:/HoaLang/HoaLang_BE/src/modules/auth/auth.service.ts).
+   - Sửa đổi phương thức `verifyAccount(token)`: Nếu phát hiện tài khoản đã kích hoạt (`user.isVerified === true`), trả về ngay thông tin người dùng được loại bỏ password (thay vì ném ra lỗi `400 Bad Request` với thông điệp "This account is already verified"). Điều này làm cho API xác thực trở nên idempotent (gọi nhiều lần với cùng 1 token đều trả về kết quả thành công).

@@ -3,6 +3,7 @@ import { Strategy as LocalStrategy } from 'passport-local';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import bcrypt from 'bcrypt';
 import { User } from '../models/core/User.model';
+import { authService } from '../modules/auth/auth.service';
 
 // ── Local Strategy ────────────────────────────────────────────────────────────
 passport.use(
@@ -15,8 +16,16 @@ passport.use(
           return done(null, false, { message: 'Incorrect email or password.' });
         }
 
+        if (!user.isVerified) {
+          return done(null, false, { message: 'Tài khoản chưa được kích hoạt. Vui lòng kiểm tra email kích hoạt.' });
+        }
+
+        if (user.status === 'BLOCKED') {
+          return done(null, false, { message: 'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ Admin.' });
+        }
+
         if (!user.password) {
-          return done(null, false, { message: 'Use social login for this account.' });
+          return done(null, false, { message: 'Tài khoản liên kết mạng xã hội. Vui lòng đăng nhập qua Google.' });
         }
 
         const isMatch = await bcrypt.compare(password, user.password);
@@ -47,35 +56,19 @@ passport.use(
     },
     async (_req, _accessToken, _refreshToken, profile, done) => {
       try {
-        // Check existing Google user
-        let user = await User.findOne({ googleId: profile.id });
-        if (user) return done(null, user);
-
-        // Link to existing email account
         const email = profile.emails?.[0]?.value;
-        if (email) {
-          user = await User.findOne({ email });
-          if (user) {
-            user.googleId = profile.id;
-            if (!user.avatar) {
-              user.avatar = profile.photos?.[0]?.value;
-            }
-            await user.save();
-            return done(null, user);
-          }
+        if (!email) {
+          return done(new Error('No email found in Google profile.'));
         }
 
-        // Create new Google user
-        const newUser = new User({
+        const user = await authService.upsertSocialMedia({
           googleId: profile.id,
-          email: email ?? `${profile.id}@google.com`,
-          name: profile.displayName ?? 'Google User',
+          email,
+          fullName: profile.displayName || 'Google User',
           avatar: profile.photos?.[0]?.value,
-          role: 'USER',
         });
 
-        await newUser.save();
-        return done(null, newUser);
+        return done(null, user);
       } catch (err: unknown) {
         return done(err as Error);
       }
@@ -95,3 +88,4 @@ passport.deserializeUser(async (id: string, done) => {
     done(err);
   }
 });
+
