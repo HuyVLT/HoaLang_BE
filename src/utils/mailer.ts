@@ -66,3 +66,69 @@ export const sendVerificationEmail = async (
     throw error;
   }
 };
+
+export const sendResetPasswordEmail = async (
+  email: string,
+  fullName: string,
+  token: string,
+  locale: string = 'vi'
+): Promise<void> => {
+  const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
+  const resolvedLocale = locale === 'en' ? 'en' : 'vi';
+  const resetUrl = `${clientUrl}/${resolvedLocale}/auth/reset-password?token=${token}`;
+
+  const mailOptions = {
+    from: process.env.SMTP_FROM || '"HoaLang" <no-reply@hoalang.vn>',
+    to: email,
+    subject: resolvedLocale === 'en' ? '[HoaLang] Reset your password' : '[HoaLang] Khôi phục mật khẩu của bạn',
+    html: `
+      <div style="font-family: 'Be Vietnam Pro', Helvetica, Arial, sans-serif; background-color: #F5F0E8; padding: 40px 20px; color: #1A1208; max-width: 600px; margin: 0 auto; border: 1px solid #D4C9B5; border-radius: 3px;">
+        <div style="text-align: center; margin-bottom: 30px;">
+          <h2 style="font-family: 'Cormorant Garamond', Georgia, serif; font-size: 28px; font-weight: 600; color: #8B1A1A; margin: 0; font-style: italic;">HoaLang</h2>
+          <p style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.15em; color: #C4952A; margin: 5px 0 0 0;">Tinh hoa Làng nghề Việt</p>
+        </div>
+        
+        <div style="background-color: #FAF7F2; padding: 30px; border: 1px solid #D4C9B5; border-radius: 3px;">
+          <p style="font-size: 16px; margin-top: 0; font-weight: 300; line-height: 1.6;">
+            ${resolvedLocale === 'en' ? `Hello <strong>${fullName}</strong>,` : `Xin chào <strong>${fullName}</strong>,`}
+          </p>
+          
+          <p style="font-size: 14px; line-height: 1.7; color: #2E2318; font-weight: 300;">
+            ${resolvedLocale === 'en' 
+              ? 'You are receiving this email because you requested a password reset for your account on HoaLang platform.'
+              : 'Bạn nhận được email này vì bạn đã gửi yêu cầu khôi phục mật khẩu cho tài khoản trên nền tảng HoaLang.'}
+            <br />
+            ${resolvedLocale === 'en'
+              ? 'To proceed with setting a new password, please click the button below:'
+              : 'Để tiếp tục đặt lại mật khẩu mới, vui lòng click vào nút bên dưới:'}
+          </p>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${resetUrl}" target="_blank" style="background-color: #8B1A1A; color: #FAF7F2; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.12em; text-decoration: none; padding: 14px 32px; border-radius: 3px; display: inline-block; transition: background-color 0.3s;">
+              ${resolvedLocale === 'en' ? 'Reset Password' : 'Đặt lại mật khẩu'}
+            </a>
+          </div>
+          
+          <p style="font-size: 12px; line-height: 1.6; color: #8C8070; font-style: italic;">
+            ${resolvedLocale === 'en'
+              ? '* This reset link is valid for <strong>15 minutes</strong>. If you did not request this reset, please ignore this email.'
+              : '* Đường link đặt lại mật khẩu này có hiệu lực trong vòng <strong>15 phút</strong>. Nếu bạn không gửi yêu cầu này, vui lòng bỏ qua email.'}
+          </p>
+        </div>
+        
+        <div style="text-align: center; margin-top: 30px; font-size: 11px; color: #8C8070; line-height: 1.5;">
+          <p style="margin: 0;">&copy; ${new Date().getFullYear()} HoaLang Platform. All rights reserved.</p>
+          <p style="margin: 5px 0 0 0;">Cổng thông tin di sản và du lịch làng nghề Việt Nam</p>
+        </div>
+      </div>
+    `,
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`[Mailer] Reset password email sent to ${email}. MessageId: ${info.messageId}`);
+  } catch (error) {
+    console.error(`[Mailer] Failed to send reset email to ${email}:`, error);
+    throw error;
+  }
+};

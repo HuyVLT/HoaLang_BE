@@ -3,7 +3,7 @@ import passport from 'passport';
 import { authController } from './auth.controller';
 import { protect } from '../../middleware/auth.middleware';
 import { validateRequest } from '../../middleware/validate.middleware';
-import { registerSchema, loginSchema } from './auth.dto';
+import { registerSchema, loginSchema, forgotPasswordSchema, resetPasswordSchema } from './auth.dto';
 import { upload } from '../../middleware/upload.middleware';
 
 const router = Router();
@@ -213,6 +213,72 @@ router.get('/google', (req, res, next) => {
 
 // Callback routing after Google authorization redirects
 router.get('/google/callback', authController.googleCallback);
+
+/**
+ * @openapi
+ * /auth/forgot-password:
+ *   post:
+ *     summary: Request password reset email token
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: guest@gmail.com
+ *     responses:
+ *       200:
+ *         description: Reset email sent successfully
+ *       404:
+ *         description: Email not found
+ */
+router.post(
+  '/forgot-password',
+  validateRequest(forgotPasswordSchema),
+  authController.forgotPassword
+);
+
+/**
+ * @openapi
+ * /auth/reset-password:
+ *   post:
+ *     summary: Reset password using verification token
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - token
+ *               - password
+ *             properties:
+ *               token:
+ *                 type: string
+ *                 example: jwt-verification-token-string
+ *               password:
+ *                 type: string
+ *                 format: password
+ *                 example: NewPass@123
+ *     responses:
+ *       200:
+ *         description: Password reset successfully
+ *       400:
+ *         description: Invalid or expired reset token
+ */
+router.post(
+  '/reset-password',
+  validateRequest(resetPasswordSchema),
+  authController.resetPassword
+);
 
 export default router;
 
