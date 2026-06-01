@@ -163,6 +163,44 @@ export class AuthController {
       }
     })(req, res, next);
   };
+
+  /**
+   * Request password reset token email
+   */
+  public forgotPassword = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { email } = req.body;
+      await authService.forgotPassword(email);
+      sendResponse(
+        res,
+        200,
+        true,
+        null,
+        'Yêu cầu khôi phục mật khẩu thành công. Vui lòng kiểm tra email của bạn để đặt lại mật khẩu.'
+      );
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  /**
+   * Perform password reset using token
+   */
+  public resetPassword = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { token, password } = req.body;
+      await authService.resetPassword(token, password);
+      sendResponse(
+        res,
+        200,
+        true,
+        null,
+        'Đặt lại mật khẩu thành công! Bạn có thể sử dụng mật khẩu mới để đăng nhập.'
+      );
+    } catch (err) {
+      next(err);
+    }
+  };
 }
 
 export const authController = new AuthController();

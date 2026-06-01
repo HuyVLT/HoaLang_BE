@@ -1,5 +1,4 @@
 import mongoose from 'mongoose';
-import bcrypt from 'bcrypt';
 import dotenv from 'dotenv';
 import { User } from '../models/core/User.model';
 import { Tenant } from '../models/core/Tenant.model';
@@ -79,11 +78,10 @@ const seedDatabase = async (): Promise<void> => {
     }
     console.log('Tenant databases cleared.');
 
-    // 2. Generate hashed passwords
-    const salt = await bcrypt.genSalt(10);
-    const adminPassword = await bcrypt.hash('Admin@123', salt);
-    const ownerPassword = await bcrypt.hash('TruongHuy888!', salt);
-    const userPassword = await bcrypt.hash('TruongHuy888!', salt);
+    // 2. Plain-text passwords (Mongoose pre-save hook handles hashing automatically to avoid double-hashing)
+    const adminPassword = 'Admin@123';
+    const ownerPassword = 'TruongHuy888!';
+    const userPassword = 'TruongHuy888!';
 
     // 3. Create Admin account
     console.log('Creating Admin account...');
@@ -93,7 +91,8 @@ const seedDatabase = async (): Promise<void> => {
       password: adminPassword,
       avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
       role: 'ADMIN',
-      locale: 'vi'
+      locale: 'vi',
+      isVerified: true
     });
     console.log('Admin account created successfully: admin@hoalang.vn');
 
@@ -104,21 +103,24 @@ const seedDatabase = async (): Promise<void> => {
       fullName: 'Chủ Làng Bát Tràng',
       password: ownerPassword,
       role: 'VILLAGE_OWNER',
-      locale: 'vi'
+      locale: 'vi',
+      isVerified: true
     });
     const vanphucOwner: any = await User.create({
       email: 'owner@vanphuc.vn',
       fullName: 'Chủ Làng Vạn Phúc',
       password: ownerPassword,
       role: 'VILLAGE_OWNER',
-      locale: 'vi'
+      locale: 'vi',
+      isVerified: true
     });
     const nonnuocOwner: any = await User.create({
       email: 'owner@nonuoc.vn',
       fullName: 'Chủ Làng Non Nước',
       password: ownerPassword,
       role: 'VILLAGE_OWNER',
-      locale: 'vi'
+      locale: 'vi',
+      isVerified: true
     });
     console.log('Village Owner accounts created successfully.');
 
@@ -129,7 +131,8 @@ const seedDatabase = async (): Promise<void> => {
       fullName: 'Du Khách Đam Mê Di Sản',
       password: userPassword,
       role: 'USER',
-      locale: 'vi'
+      locale: 'vi',
+      isVerified: true
     });
     console.log('Demo Traveler account created successfully: traveler@gmail.com');
 

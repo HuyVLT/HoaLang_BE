@@ -23,6 +23,55 @@ Hệ thống Backend của HoaLang được viết trên nền tảng **Express 
 
 ## 2. Nhật ký Thay đổi chi tiết (Changelog)
 
+### [2026-06-01] Mongoose Seeder Double-Hashing and User Verification Resolution
+
+#### Tác vụ hoàn thành
+- Khắc phục lỗi nghiêm trọng khiến tất cả các tài khoản dữ liệu mẫu (Seeded accounts) không thể đăng nhập được sau khi chạy seed:
+  1. Sửa lỗi mật khẩu bị băm (hash) 2 lần do seed băm thủ công kết hợp pre-save hook của Mongoose băm thêm lần nữa.
+  2. Sửa lỗi tài khoản bị gắn cờ "chưa kích hoạt" do trường `isVerified` mặc định là `false`.
+- Cấu hình lại seeder chạy mượt mà, xác thực tài khoản tức thì, và dọn dẹp các import không sử dụng.
+
+#### Chi tiết kỹ thuật & File thay đổi
+1. **Plain-text Password Transition**:
+   - Thay đổi trong [seed.ts](file:///c:/Project%20Web/Multi-Tenant/HoaLang/hoalang-be/src/seeds/seed.ts).
+   - Chuyển cấu hình mật khẩu từ băm thủ công qua `bcrypt.hash` thành dạng chuỗi gốc để Mongoose Pre-save Hook tự động băm 1 lần duy nhất trước khi lưu vào MongoDB.
+2. **Explicit Account Verification Flag**:
+   - Thay đổi trong [seed.ts](file:///c:/Project%20Web/Multi-Tenant/HoaLang/hoalang-be/src/seeds/seed.ts).
+   - Bổ sung trường `isVerified: true` cho tất cả các tài khoản khởi tạo (Super Admin, các Owners, và Demo Traveler) để bỏ qua kiểm tra kích hoạt tài khoản trong passport local strategy.
+3. **Unused Imports Clean Up**:
+   - Loại bỏ import `bcrypt` dư thừa trong tệp `seed.ts` để vượt qua khâu kiểm duyệt ts-node nghiêm ngặt.
+
+---
+
+### [2026-06-01] Google OAuth Avatar Synchronization Enhancement
+
+#### Tác vụ hoàn thành
+- Khắc phục lỗ hổng không đồng bộ ảnh đại diện mới khi người dùng tiếp tục đăng nhập bằng Google trên tài khoản đã tồn tại.
+- Nâng cấp hàm `upsertSocialMedia` kiểm tra và tự động cập nhật trường `avatar` và `fullName` mới nhất từ Google OAuth.
+
+#### Chi tiết kỹ thuật & File thay đổi
+1. **Google OAuth User Synchronization**:
+   - Thay đổi trong [auth.service.ts](file:///c:/Project%20Web/Multi-Tenant/HoaLang/hoalang-be/src/modules/auth/auth.service.ts).
+   - Bổ sung logic kiểm tra trong hàm `upsertSocialMedia`: khi người dùng đã tồn tại `googleId`, hệ thống sẽ so sánh thuộc tính `avatar` và `fullName` hiện tại trong DB với thông tin Google trả về. Nếu có sự thay đổi hoặc thiếu sót, hệ thống sẽ thực hiện cập nhật và tự động gọi `user.save()` để lưu trữ đồng bộ trạng thái mới nhất. Điều này sửa đổi triệt để trường hợp tài khoản đã tạo trước khi hệ thống lưu ảnh đại diện hoặc người dùng thay đổi ảnh đại diện trên tài khoản Google của họ.
+
+---
+
+### [2026-06-01] Backend Environment Variables Configuration & Dependency Installation
+
+#### Tác vụ hoàn thành
+- Đồng bộ cấu hình môi trường phát triển chính thức (.env) cho ứng dụng Backend.
+- Thiết lập thông tin kết nối tới hệ thống MongoDB Atlas, SMTP Mailer gửi thư kích hoạt tài khoản song ngữ, cổng kết nối hình ảnh Cloudinary, Google OAuth 2.0 Single Sign-On (SSO) và các engine tìm kiếm Meilisearch.
+- Cài đặt và tích hợp thư viện `nodemailer` cùng kiểu dữ liệu `@types/nodemailer` bị thiếu giúp quá trình biên dịch TypeScript (`tsc`) hoàn thành thành công 100% không có lỗi.
+
+#### Chi tiết kỹ thuật & File thay đổi
+1. **Environment Variables Configuration**:
+   - Sửa đổi trong tệp [.env](file:///c:/Project%20Web/Multi-Tenant/HoaLang/hoalang-be/.env).
+   - Tích hợp thông tin xác thực SMTP passkey gửi thư song ngữ, thiết lập Cloudinary API Key/Secret, Google OAuth client credentials và cập nhật URI truy vấn kết nối cụm cluster MongoDB Atlas chính thức.
+2. **Missing Dependency Installation**:
+   - Khởi chạy lệnh cài đặt thư viện `pnpm add nodemailer` tự động tích hợp các gói xác thực gửi thư điện tử giúp giải quyết lỗi biên dịch thiếu module `nodemailer` tại `src/utils/mailer.ts`.
+
+---
+
 ### [2026-05-31] Atlas Database Seeder and Connection Hoisting Fixes
 
 #### Tác vụ hoàn thành

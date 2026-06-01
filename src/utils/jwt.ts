@@ -13,7 +13,7 @@ export interface TokenPayload {
 
 export interface VerifyTokenPayload {
   email: string;
-  type: 'verification';
+  type: 'verification' | 'reset-password';
 }
 
 export const generateAccessToken = (payload: TokenPayload): string => {

@@ -10,7 +10,7 @@ import {
   TokenPayload,
 } from '../../utils/jwt';
 import { redisClient } from '../../config/redis';
-import { sendVerificationEmail } from '../../utils/mailer';
+import { sendVerificationEmail, sendResetPasswordEmail } from '../../utils/mailer';
 
 export class AuthService {
   /**
@@ -130,6 +130,18 @@ export class AuthService {
       if (user.status === 'BLOCKED') {
         throw new AppError('Your account has been blocked. Please contact support.', 403);
       }
+      let hasChanges = false;
+      if (profile.avatar && user.avatar !== profile.avatar) {
+        user.avatar = profile.avatar;
+        hasChanges = true;
+      }
+      if (profile.fullName && user.fullName !== profile.fullName) {
+        user.fullName = profile.fullName;
+        hasChanges = true;
+      }
+      if (hasChanges) {
+        await user.save();
+      }
       return user;
     }
 
@@ -229,6 +241,78 @@ export class AuthService {
     const ttl = decoded.exp - Math.floor(Date.now() / 1000);
     if (ttl > 0) {
       await redisClient.setEx(`blacklist:${token}`, ttl, 'true');
+    }
+  }
+
+  /**
+   * Send reset password email token
+   */
+  public async forgotPassword(email: string): Promise<void> {
+    const user = await User.findOne({ email });
+    if (!user) {
+      throw new AppError('No account registered with this email address.', 404);
+    }
+
+    if (user.socialLogin || user.type === 'GOOGLE') {
+      throw new AppError('This email is registered using Google OAuth. Please log in using Google.', 400);
+    }
+
+    if (user.status === 'BLOCKED') {
+      throw new AppError('Your account has been blocked.', 403);
+    }
+
+    // Generate reset token valid for 15 minutes
+    const resetToken = generateVerifyToken({
+      email: user.email,
+      type: 'reset-password',
+    });
+
+    try {
+      await sendResetPasswordEmail(user.email, user.fullName, resetToken, user.locale);
+    } catch (mailError) {
+      console.error('[AuthService] Error sending reset password email:', mailError);
+      throw new AppError('Failed to send reset password email. Please try again later.', 500);
+    }
+  }
+
+  /**
+   * Reset user password with token
+   */
+  public async resetPassword(token: string, newPassword?: string): Promise<void> {
+    if (!newPassword) {
+      throw new AppError('New password is required.', 400);
+    }
+
+    try {
+      const decoded = verifyVerifyToken(token);
+      if (decoded.type !== 'reset-password') {
+        throw new AppError('Invalid token type for password reset.', 400);
+      }
+
+      const user = await User.findOne({ email: decoded.email });
+      if (!user) {
+        throw new AppError('No user account found with this email.', 404);
+      }
+
+      if (user.status === 'BLOCKED') {
+        throw new AppError('This account has been blocked.', 403);
+      }
+
+      // Update password (pre-save hook will hash it)
+      user.password = newPassword;
+      
+      // If user was registering and unverified, verify them automatically as they hold the reset token email ownership
+      if (!user.isVerified) {
+        user.isVerified = true;
+        user.verificationExpiresAt = undefined;
+      }
+      
+      await user.save();
+    } catch (err: any) {
+      if (err.name === 'TokenExpiredError') {
+        throw new AppError('Reset password link has expired. Please request another reset email.', 400);
+      }
+      throw err;
     }
   }
 }
