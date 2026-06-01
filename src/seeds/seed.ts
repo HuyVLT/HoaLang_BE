@@ -350,7 +350,20 @@ const seedDatabase = async (): Promise<void> => {
 
     await btModels.Product.create(btProducts);
     await btModels.Workshop.create(btWorkshops);
-    console.log('  ✓ Seeded products and workshops for bat-trang.');
+
+    // Seed matching experiences for booking integration
+    const btExperiences = btWorkshops.map(w => ({
+      title: w.title,
+      desc: w.desc,
+      duration: w.duration,
+      maxGuests: w.maxParticipants,
+      price: w.price,
+      schedule: [w.startDate],
+      isPublished: true
+    }));
+    await btModels.Experience.create(btExperiences);
+
+    console.log('  ✓ Seeded products, workshops, and experiences for bat-trang.');
 
 
     // ────────────── TENANT 2: Vạn Phúc ──────────────
@@ -446,7 +459,20 @@ const seedDatabase = async (): Promise<void> => {
 
     await vpModels.Product.create(vpProducts);
     await vpModels.Workshop.create(vpWorkshops);
-    console.log('  ✓ Seeded products and workshops for van-phuc.');
+
+    // Seed matching experiences for booking integration
+    const vpExperiences = vpWorkshops.map(w => ({
+      title: w.title,
+      desc: w.desc,
+      duration: w.duration,
+      maxGuests: w.maxParticipants,
+      price: w.price,
+      schedule: [w.startDate],
+      isPublished: true
+    }));
+    await vpModels.Experience.create(vpExperiences);
+
+    console.log('  ✓ Seeded products, workshops, and experiences for van-phuc.');
 
 
     // ────────────── TENANT 3: Non Nước ──────────────
@@ -542,7 +568,20 @@ const seedDatabase = async (): Promise<void> => {
 
     await nnModels.Product.create(nnProducts);
     await nnModels.Workshop.create(nnWorkshops);
-    console.log('  ✓ Seeded products and workshops for non-nuoc.');
+
+    // Seed matching experiences for booking integration
+    const nnExperiences = nnWorkshops.map(w => ({
+      title: w.title,
+      desc: w.desc,
+      duration: w.duration,
+      maxGuests: w.maxParticipants,
+      price: w.price,
+      schedule: [w.startDate],
+      isPublished: true
+    }));
+    await nnModels.Experience.create(nnExperiences);
+
+    console.log('  ✓ Seeded products, workshops, and experiences for non-nuoc.');
 
     // 10. Close all connections gracefully
     console.log('\nClosing all connections...');
