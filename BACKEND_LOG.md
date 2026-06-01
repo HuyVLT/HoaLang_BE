@@ -147,5 +147,24 @@ Hệ thống Backend của HoaLang được viết trên nền tảng **Express 
 
 #### Chi tiết kỹ thuật & File thay đổi
 1. **Idempotency in Auth Service**:
-   - Thay đổi trong [auth.service.ts](file:///d:/HoaLang/HoaLang_BE/src/modules/auth/auth.service.ts).
+   - Thay đổi trong [auth.service.ts](file:///c:/Project%20Web/Multi-Tenant/HoaLang/hoalang-be/src/modules/auth/auth.service.ts).
    - Sửa đổi phương thức `verifyAccount(token)`: Nếu phát hiện tài khoản đã kích hoạt (`user.isVerified === true`), trả về ngay thông tin người dùng được loại bỏ password (thay vì ném ra lỗi `400 Bad Request` với thông điệp "This account is already verified"). Điều này làm cho API xác thực trở nên idempotent (gọi nhiều lần với cùng 1 token đều trả về kết quả thành công).
+
+---
+
+### [2026-06-01] Multi-Tenant Experiences Endpoint & Enhanced Database Seeding
+
+#### Tác vụ hoàn thành
+- Xây dựng hoàn chỉnh API truy xuất danh sách Trải nghiệm (`GET /experiences`) theo từng phân hệ Làng nghề (tenant-scoped) phục vụ tích hợp đặt chỗ (booking) từ frontend.
+- Cải tiến quy trình seeding dữ liệu mẫu: bổ sung đồng bộ cơ sở dữ liệu `Experience` song hành cùng bộ sưu tập `Workshop` để loại bỏ triệt để lỗi 404 khi thực hiện tạo giao dịch sandbox tại cổng PayOS.
+
+#### Chi tiết kỹ thuật & File thay đổi
+1. **Experience Retrieval Service & Controller**:
+   - Thay đổi trong [payment.controller.ts](file:///c:/Project%20Web/Multi-Tenant/HoaLang/hoalang-be/src/modules/payment/payment.controller.ts).
+   - Triển khai phương thức điều khiển `getExperiences`: Tự động trích xuất `Experience` model thuộc Connection Pool tương ứng của tenant (`req.tenantDb!`), truy vấn toàn bộ các trải nghiệm có cờ `isPublished: true` và sắp xếp giảm dần theo thời gian tạo.
+2. **Tenant-Scoped Experience Routing**:
+   - Thay đổi trong [payment.routes.ts](file:///c:/Project%20Web/Multi-Tenant/HoaLang/hoalang-be/src/modules/payment/payment.routes.ts).
+   - Tích hợp thêm route `GET /experiences` áp dụng đồng bộ chốt chặn middleware `resolveTenant` và `requireTenantDb` để cô lập dữ liệu chuẩn xác cho từng làng nghề.
+3. **Database Seeder Synchronization**:
+   - Thay đổi trong [seed.ts](file:///c:/Project%20Web/Multi-Tenant/HoaLang/hoalang-be/src/seeds/seed.ts).
+   - Cải tiến quy trình seed: Sau khi khởi tạo các `Workshop` mẫu cho Bát Tràng, Vạn Phúc và Non Nước, tự động ánh xạ (map) các thuộc tính tương thích sang schema `Experience` và ghi nhận đồng thời vào bộ sưu tập `Experience`. Điều này giúp đảm bảo API tạo booking (`POST /bookings` tìm kiếm qua `Experience` model) luôn phân giải thành công thực thể thật trong cơ sở dữ liệu.

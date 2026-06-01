@@ -10,6 +10,7 @@ export interface CreateTenantInput {
   domain: string;
   features?: Partial<ITenant['features']>;
   theme?: Partial<ITenant['theme']>;
+  payosConfig?: Partial<ITenant['payosConfig']>;
 }
 
 export interface ProvisionResult {
@@ -47,7 +48,7 @@ export class ProvisioningService {
    * initialize collections, seed defaults.
    */
   public async createTenant(input: CreateTenantInput): Promise<ProvisionResult> {
-    const { slug, name, domain, features, theme } = input;
+    const { slug, name, domain, features, theme, payosConfig } = input;
 
     // ── 1. Check for conflicts ───────────────────────────────────────────────
     const exists = await Tenant.findOne({ $or: [{ slug }, { domain }] });
@@ -75,6 +76,12 @@ export class ProvisioningService {
       theme: {
         primaryColor: theme?.primaryColor ?? '#8B1A1A',
         logo: theme?.logo,
+      },
+      payosConfig: {
+        clientId: payosConfig?.clientId ?? null,
+        apiKey: payosConfig?.apiKey ?? null,
+        checksumKey: payosConfig?.checksumKey ?? null,
+        isEnabled: payosConfig?.isEnabled ?? false,
       },
     });
 
