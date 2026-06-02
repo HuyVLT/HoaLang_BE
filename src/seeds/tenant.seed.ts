@@ -3,6 +3,7 @@ dotenv.config();
 
 import { connectCoreDB } from '../config/coreDatabase';
 import { provisioningService } from '../modules/tenantProvisioning/provisioning.service';
+import { encrypt } from '../utils/crypto.util';
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────
@@ -24,6 +25,12 @@ const TENANTS_TO_SEED = [
     domain: 'battrang.hoalang.vn',
     features: { ecommerce: true, booking: true, aiAssistant: true },
     theme: { primaryColor: '#8B5A2B', logo: '/logos/bat-trang.svg' },
+    payosConfig: {
+      clientId: encrypt(process.env.DEMO_PAYOS_CLIENT_ID || 'dummy_client_id'),
+      apiKey: encrypt(process.env.DEMO_PAYOS_API_KEY || 'dummy_api_key'),
+      checksumKey: encrypt(process.env.DEMO_PAYOS_CHECKSUM_KEY || 'dummy_checksum_key'),
+      isEnabled: true
+    }
   },
   {
     slug: 'van-phuc',
@@ -31,6 +38,12 @@ const TENANTS_TO_SEED = [
     domain: 'vanphuc.hoalang.vn',
     features: { ecommerce: true, booking: true, aiAssistant: false },
     theme: { primaryColor: '#8B1A1A', logo: '/logos/van-phuc.svg' },
+    payosConfig: {
+      clientId: encrypt(process.env.DEMO_PAYOS_CLIENT_ID || 'dummy_client_id'),
+      apiKey: encrypt(process.env.DEMO_PAYOS_API_KEY || 'dummy_api_key'),
+      checksumKey: encrypt(process.env.DEMO_PAYOS_CHECKSUM_KEY || 'dummy_checksum_key'),
+      isEnabled: true
+    }
   },
   {
     slug: 'non-nuoc',
@@ -38,6 +51,12 @@ const TENANTS_TO_SEED = [
     domain: 'nonnuoc.hoalang.vn',
     features: { ecommerce: true, booking: false, aiAssistant: false },
     theme: { primaryColor: '#4A5568', logo: '/logos/non-nuoc.svg' },
+    payosConfig: {
+      clientId: null,
+      apiKey: null,
+      checksumKey: null,
+      isEnabled: false
+    }
   },
 ];
 

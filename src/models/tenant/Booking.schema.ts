@@ -8,6 +8,15 @@ export interface IBooking {
   status: 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED';
   totalPrice: number;
   notes?: string;
+  payment: {
+    method: 'COD' | 'PAYOS';
+    status: 'PENDING' | 'PAID' | 'CANCELLED' | 'FAILED';
+    orderCode?: number;
+    paymentLinkId?: string;
+    checkoutUrl?: string;
+    qrCode?: string;
+    paidAt?: Date;
+  };
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -25,6 +34,15 @@ export const BookingSchema = new Schema<IBooking>(
     },
     totalPrice: { type: Number, required: true, min: 0 },
     notes: { type: String },
+    payment: {
+      method: { type: String, enum: ['COD', 'PAYOS'], default: 'COD' },
+      status: { type: String, enum: ['PENDING', 'PAID', 'CANCELLED', 'FAILED'], default: 'PENDING' },
+      orderCode: { type: Number },
+      paymentLinkId: { type: String },
+      checkoutUrl: { type: String },
+      qrCode: { type: String },
+      paidAt: { type: Date },
+    },
   },
   { timestamps: true }
 );

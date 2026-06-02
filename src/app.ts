@@ -14,10 +14,13 @@ import './config/passport';
 import authRoutes from './modules/auth/auth.routes';
 import productRoutes from './modules/product/product.routes';
 import tenantConfigRoutes from './modules/tenantConfig/tenantConfig.routes';
+import villageRoutes from './modules/village/village.routes';
 import { resolveTenant, requireTenantDb } from './middleware/tenant.middleware';
 import { errorHandler } from './middleware/error.middleware';
 import { setupSwagger } from './config/swagger';
 import { sendResponse } from './utils/response';
+import paymentRoutes from './modules/payment/payment.routes';
+import dashboardRoutes from './modules/tenantConfig/dashboard.routes';
 
 const app = express();
 const PORT = process.env.PORT ?? 5000;
@@ -67,6 +70,13 @@ setupSwagger(app);
 // Auth operates globally against hoalang_core — NO tenant middleware here
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/tenant', tenantConfigRoutes);
+app.use('/api/v1/villages', villageRoutes);
+
+// Register order, booking, and PayOS payment endpoints
+app.use('/api/v1', paymentRoutes);
+
+// Register merchant dashboard routes
+app.use('/api/v1/dashboard', dashboardRoutes);
 
 // ── Tenant-scoped routes ──────────────────────────────────────────────────────
 app.use('/api/v1/products', resolveTenant, requireTenantDb, productRoutes);

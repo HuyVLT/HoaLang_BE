@@ -15,6 +15,12 @@ export interface ITenant {
     primaryColor: string;
     logo?: string;
   };
+  payosConfig: {
+    clientId: string | null;
+    apiKey: string | null;
+    checksumKey: string | null;
+    isEnabled: boolean;
+  };
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -41,6 +47,12 @@ const TenantSchema = new Schema<ITenant>(
     theme: {
       primaryColor: { type: String, default: '#8B1A1A' }, // Default lacquer red
       logo: { type: String },
+    },
+    payosConfig: {
+      clientId: { type: String, default: null },
+      apiKey: { type: String, default: null },
+      checksumKey: { type: String, default: null },
+      isEnabled: { type: Boolean, default: false },
     },
   },
   { timestamps: true }

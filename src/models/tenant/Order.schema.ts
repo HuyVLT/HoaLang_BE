@@ -20,6 +20,15 @@ export interface IOrder {
     province: string;
   };
   paymentMethod?: string;
+  payment: {
+    method: 'COD' | 'PAYOS';
+    status: 'PENDING' | 'PAID' | 'CANCELLED' | 'FAILED';
+    orderCode?: number;
+    paymentLinkId?: string;
+    checkoutUrl?: string;
+    qrCode?: string;
+    paidAt?: Date;
+  };
   paidAt?: Date;
   createdAt?: Date;
   updatedAt?: Date;
@@ -53,6 +62,15 @@ export const OrderSchema = new Schema<IOrder>(
       province: { type: String },
     },
     paymentMethod: { type: String },
+    payment: {
+      method: { type: String, enum: ['COD', 'PAYOS'], default: 'COD' },
+      status: { type: String, enum: ['PENDING', 'PAID', 'CANCELLED', 'FAILED'], default: 'PENDING' },
+      orderCode: { type: Number },
+      paymentLinkId: { type: String },
+      checkoutUrl: { type: String },
+      qrCode: { type: String },
+      paidAt: { type: Date },
+    },
     paidAt: { type: Date },
   },
   { timestamps: true }
