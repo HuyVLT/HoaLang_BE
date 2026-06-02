@@ -21,6 +21,7 @@ import { setupSwagger } from './config/swagger';
 import { sendResponse } from './utils/response';
 import paymentRoutes from './modules/payment/payment.routes';
 import dashboardRoutes from './modules/tenantConfig/dashboard.routes';
+import voucherRoutes from './modules/voucher/voucher.routes';
 
 const app = express();
 const PORT = process.env.PORT ?? 5000;
@@ -77,6 +78,9 @@ app.use('/api/v1', paymentRoutes);
 
 // Register merchant dashboard routes
 app.use('/api/v1/dashboard', dashboardRoutes);
+
+// Register vouchers routes
+app.use('/api/v1/vouchers', voucherRoutes);
 
 // ── Tenant-scoped routes ──────────────────────────────────────────────────────
 app.use('/api/v1/products', resolveTenant, requireTenantDb, productRoutes);

@@ -5,6 +5,7 @@ import { Tenant } from '../models/core/Tenant.model';
 import { PageConfig } from '../models/core/PageConfig.model';
 import { UserTenantRole } from '../models/core/UserTenantRole.model';
 import { Village } from '../models/Village.model';
+import { Voucher } from '../models/core/Voucher.model';
 import { connectCoreDB } from '../config/coreDatabase';
 import { getTenantConnection } from '../config/tenantConnection';
 import { getTenantModels } from '../modules/shared/modelFactory/modelFactory';
@@ -53,6 +54,7 @@ const seedDatabase = async (): Promise<void> => {
     await PageConfig.deleteMany({});
     await UserTenantRole.deleteMany({});
     await Village.deleteMany({});
+    await Voucher.deleteMany({});
     console.log('Core collections cleared.');
 
     // 1.5. Clean existing tenant databases to avoid duplicate key errors during provisioning
@@ -226,6 +228,66 @@ const seedDatabase = async (): Promise<void> => {
       }
     ]);
     console.log('Core villages seeded.');
+
+    // 8.5. Seed vouchers in Core database
+    console.log('Seeding core vouchers list...');
+    const now = new Date();
+    const oneYearFromNow = new Date();
+    oneYearFromNow.setFullYear(now.getFullYear() + 1);
+
+    await Voucher.create([
+      {
+        code: 'HOALANG10',
+        description: {
+          vi: 'Giảm 10% cho tất cả các đơn hàng trải nghiệm di sản và đặt lịch workshop.',
+          en: 'Get 10% off for all heritage tour bookings and workshop reservations.',
+          ja: 'すべてのヘリテージツアーとワークショップ予約が10%割引になります。',
+          ko: '모든 헤리티지 투어 및 워크숍 예약 10% 할인.',
+          zh: '所有遗产旅游及体验坊预约均享 10% 优惠。'
+        },
+        discountType: 'PERCENTAGE',
+        discountValue: 10,
+        minOrderValue: 100000,
+        maxDiscountValue: 50000,
+        startDate: now,
+        endDate: oneYearFromNow,
+        isActive: true
+      },
+      {
+        code: 'BATTRANG20',
+        description: {
+          vi: 'Giảm 20% cho các sản phẩm gốm sứ khi mua hàng trực tiếp tại gian hàng Bát Tràng.',
+          en: 'Get 20% off for ceramic products when purchased directly at Bat Trang boutique.',
+          ja: 'バッチャンブティックでセラミック製品を購入すると20%割引になります。',
+          ko: '밧짱 부티크에서 세라믹 제품 구매 시 20% 할인.',
+          zh: '在巴特朗精品店直接购买陶瓷产品可享 20% 优惠。'
+        },
+        discountType: 'PERCENTAGE',
+        discountValue: 20,
+        minOrderValue: 200000,
+        maxDiscountValue: 100000,
+        startDate: now,
+        endDate: oneYearFromNow,
+        isActive: true
+      },
+      {
+        code: 'VANPHUC50K',
+        description: {
+          vi: 'Giảm trực tiếp 50.000 ₫ cho các đơn hàng dệt lụa tơ tằm Vạn Phúc từ 500.000 ₫.',
+          en: 'Direct discount of 50,000 VND for Van Phuc silk weaving orders from 500,000 VND.',
+          ja: '500,000VND以上のヴァンフックシルク製品의購入で50,000VND割引。',
+          ko: '500,000 VND 이상의 반푹 실크 구매 시 50,000 VND 즉시 할인.',
+          zh: '购买万福丝绸满 500,000 越南盾立减 50,000 越南盾。'
+        },
+        discountType: 'FIXED',
+        discountValue: 50000,
+        minOrderValue: 500000,
+        startDate: now,
+        endDate: oneYearFromNow,
+        isActive: true
+      }
+    ]);
+    console.log('Core vouchers seeded.');
 
     // 9. Seed products & workshops to Tenant-specific Databases
     console.log('\nSeeding products & workshops inside tenant databases...');
