@@ -46,3 +46,15 @@ export const resetPasswordSchema = z.object({
   }),
 });
 
+export const updateProfileSchema = z.object({
+  body: z.object({
+    fullName: z.string().min(2, 'Full name must be at least 2 characters.').optional(),
+    phone: z
+      .string()
+      .regex(/^\d{10}$/, 'Phone number must be exactly 10 digits.')
+      .optional()
+      .or(z.literal('')),
+  }),
+});
+
+

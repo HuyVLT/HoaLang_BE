@@ -14,6 +14,7 @@ import './config/passport';
 import authRoutes from './modules/auth/auth.routes';
 import productRoutes from './modules/product/product.routes';
 import tenantConfigRoutes from './modules/tenantConfig/tenantConfig.routes';
+import villageRoutes from './modules/village/village.routes';
 import { resolveTenant, requireTenantDb } from './middleware/tenant.middleware';
 import { errorHandler } from './middleware/error.middleware';
 import { setupSwagger } from './config/swagger';
@@ -69,6 +70,7 @@ setupSwagger(app);
 // Auth operates globally against hoalang_core — NO tenant middleware here
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/tenant', tenantConfigRoutes);
+app.use('/api/v1/villages', villageRoutes);
 
 // Register order, booking, and PayOS payment endpoints
 app.use('/api/v1', paymentRoutes);
