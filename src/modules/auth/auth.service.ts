@@ -131,11 +131,13 @@ export class AuthService {
         throw new AppError('Your account has been blocked. Please contact support.', 403);
       }
       let hasChanges = false;
-      if (profile.avatar && user.avatar !== profile.avatar) {
+      // Only set avatar if the user doesn't already have one
+      if (profile.avatar && !user.avatar) {
         user.avatar = profile.avatar;
         hasChanges = true;
       }
-      if (profile.fullName && user.fullName !== profile.fullName) {
+      // Only set fullName if the user doesn't already have one
+      if (profile.fullName && !user.fullName) {
         user.fullName = profile.fullName;
         hasChanges = true;
       }
@@ -314,6 +316,44 @@ export class AuthService {
       }
       throw err;
     }
+  }
+
+  /**
+   * Update user profile details in core database
+   */
+  public async updateProfile(
+    userId: string,
+    payload: {
+      fullName?: string;
+      phone?: string;
+      avatar?: string;
+    }
+  ): Promise<Record<string, unknown>> {
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new AppError('User not found.', 404);
+    }
+
+    if (user.status === 'BLOCKED') {
+      throw new AppError('Your account has been blocked.', 403);
+    }
+
+    if (payload.fullName !== undefined) {
+      user.fullName = payload.fullName;
+    }
+    if (payload.phone !== undefined) {
+      user.phone = payload.phone;
+    }
+    if (payload.avatar !== undefined) {
+      user.avatar = payload.avatar;
+    }
+
+    await user.save();
+
+    const userResponse = user.toObject() as unknown as Record<string, unknown>;
+    delete userResponse.password;
+
+    return userResponse;
   }
 }
 

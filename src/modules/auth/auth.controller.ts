@@ -201,6 +201,32 @@ export class AuthController {
       next(err);
     }
   };
+
+  /**
+   * Update currently authenticated user profile
+   */
+  public updateProfile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      if (!req.user) {
+        throw new AppError('Not authenticated.', 401);
+      }
+
+      const userId = (req.user as any)._id;
+      const { fullName, phone } = req.body;
+      let avatar = undefined;
+
+      if (req.file) {
+        console.log('[AuthController] Uploading profile avatar to Cloudinary...');
+        avatar = await uploadToCloudinary(req.file.buffer);
+      }
+
+      const updatedUser = await authService.updateProfile(userId, { fullName, phone, avatar });
+
+      sendResponse(res, 200, true, updatedUser, 'Cập nhật thông tin hồ sơ thành công.');
+    } catch (err) {
+      next(err);
+    }
+  };
 }
 
 export const authController = new AuthController();

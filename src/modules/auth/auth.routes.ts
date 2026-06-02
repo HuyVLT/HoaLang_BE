@@ -3,7 +3,7 @@ import passport from 'passport';
 import { authController } from './auth.controller';
 import { protect } from '../../middleware/auth.middleware';
 import { validateRequest } from '../../middleware/validate.middleware';
-import { registerSchema, loginSchema, forgotPasswordSchema, resetPasswordSchema } from './auth.dto';
+import { registerSchema, loginSchema, forgotPasswordSchema, resetPasswordSchema, updateProfileSchema } from './auth.dto';
 import { upload } from '../../middleware/upload.middleware';
 
 const router = Router();
@@ -278,6 +278,46 @@ router.post(
   '/reset-password',
   validateRequest(resetPasswordSchema),
   authController.resetPassword
+);
+
+/**
+ * @openapi
+ * /auth/profile:
+ *   put:
+ *     summary: Update currently logged-in user profile details
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               fullName:
+ *                 type: string
+ *                 example: Nguyen Van B
+ *               phone:
+ *                 type: string
+ *                 example: 0987654321
+ *               avatar:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       200:
+ *         description: Profile updated successfully
+ *       401:
+ *         description: Unauthenticated
+ *       400:
+ *         description: Input validation failed
+ */
+router.put(
+  '/profile',
+  protect,
+  upload.single('avatar'),
+  validateRequest(updateProfileSchema),
+  authController.updateProfile
 );
 
 export default router;

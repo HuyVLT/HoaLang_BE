@@ -168,3 +168,39 @@ Hệ thống Backend của HoaLang được viết trên nền tảng **Express 
 3. **Database Seeder Synchronization**:
    - Thay đổi trong [seed.ts](file:///c:/Project%20Web/Multi-Tenant/HoaLang/hoalang-be/src/seeds/seed.ts).
    - Cải tiến quy trình seed: Sau khi khởi tạo các `Workshop` mẫu cho Bát Tràng, Vạn Phúc và Non Nước, tự động ánh xạ (map) các thuộc tính tương thích sang schema `Experience` và ghi nhận đồng thời vào bộ sưu tập `Experience`. Điều này giúp đảm bảo API tạo booking (`POST /bookings` tìm kiếm qua `Experience` model) luôn phân giải thành công thực thể thật trong cơ sở dữ liệu.
+
+---
+
+### [2026-06-02] Global Villages API Endpoints
+
+#### Tác vụ hoàn thành
+- Phát triển API Lấy tất cả làng nghề (`GET /api/v1/villages`) và Lấy chi tiết một làng nghề (`GET /api/v1/villages/:slug`) hoạt động trực tiếp trên database hoalang_core.
+- Hỗ trợ đầy đủ các tham số truy vấn tìm kiếm lọc thông minh bao gồm: từ khóa tìm kiếm (`search`), Lọc theo tỉnh thành (`province`), Lọc theo danh mục sản xuất (`category`), và lọc theo trạng thái kiểm duyệt (`isVerified`).
+- Tích hợp tài liệu hướng dẫn Swagger OpenAPI cho phân hệ API Làng Nghề.
+
+#### Chi tiết kỹ thuật & File thay đổi
+1. **Controller**:
+   - Thêm mới [village.controller.ts](file:///d:/HoaLang/HoaLang_BE/src/modules/village/village.controller.ts): Xây dựng hàm `getVillages` xử lý Regex search trên name.vi, name.en, province và các bộ lọc tỉnh/ngành nghề. Thiết lập `getVillageBySlug` tìm kiếm một bản ghi duy nhất.
+2. **Routes**:
+   - Thêm mới [village.routes.ts](file:///d:/HoaLang/HoaLang_BE/src/modules/village/village.routes.ts): Định nghĩa các endpoint và tài liệu Swagger OpenAPI tương ứng.
+3. **App Bootstrap**:
+   - Sửa đổi [app.ts](file:///d:/HoaLang/HoaLang_BE/src/app.ts): Nhập `villageRoutes` và đăng ký định tuyến dưới tiền tố `/api/v1/villages` tại tầng định tuyến lõi (không scoped tenant).
+
+---
+
+### [2026-06-02] Update User Profile Endpoint & Cloudinary Integration
+
+#### Tác vụ hoàn thành
+- Phát triển API cập nhật thông tin cá nhân (`PUT /api/v1/auth/profile`) cho phép người dùng đang đăng nhập chỉnh sửa các trường họ tên, số điện thoại, và tải lên ảnh đại diện mới.
+- Tích hợp công cụ upload hình ảnh Multer cùng cổng lưu trữ Cloudinary để xử lý và lưu trữ trực tiếp ảnh đại diện của người dùng lên Cloudinary.
+- Tích hợp kiểm tra dữ liệu đầu vào sử dụng Zod schema.
+
+#### Chi tiết kỹ thuật & File thay đổi
+1. **Auth DTO Schema**:
+   - Sửa đổi [auth.dto.ts](file:///d:/HoaLang/HoaLang_BE/src/modules/auth/auth.dto.ts): Bổ sung `updateProfileSchema` để kiểm tra độ dài họ tên tối thiểu 2 chữ và phone tối thiểu 10 chữ số hoặc rỗng.
+2. **Auth Service**:
+   - Sửa đổi [auth.service.ts](file:///d:/HoaLang/HoaLang_BE/src/modules/auth/auth.service.ts): Thêm phương thức `updateProfile` để tìm bản ghi người dùng, cập nhật và lưu trữ các giá trị mới.
+3. **Auth Controller**:
+   - Sửa đổi [auth.controller.ts](file:///d:/HoaLang/HoaLang_BE/src/modules/auth/auth.controller.ts): Thêm phương thức `updateProfile`, gọi tiện ích `uploadToCloudinary` để chuyển file buffer thành URL ảnh đại diện chính thức.
+4. **Auth Routes**:
+   - Sửa đổi [auth.routes.ts](file:///d:/HoaLang/HoaLang_BE/src/modules/auth/auth.routes.ts): Định nghĩa đường dẫn `PUT /profile` với các middlewares `protect`, `upload.single('avatar')`, `validateRequest(updateProfileSchema)`.
