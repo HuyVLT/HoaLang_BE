@@ -5,6 +5,7 @@ import { getBookingModel } from '../../models/tenant/Booking.schema';
 import { getProductModel } from '../../models/tenant/Product.schema';
 import { getExperienceModel } from '../../models/tenant/Experience.schema';
 import { Tenant } from '../../models/core/Tenant.model';
+import { Voucher } from '../../models/core/Voucher.model';
 import { getTenantConnection } from '../../config/tenantConnection';
 import {
   createTenantPayOSLink,
@@ -29,7 +30,7 @@ export const createOrder = async (
     const Product = getProductModel(req.tenantDb!);
     const tenant = req.tenant!;
 
-    const { items, shippingAddress, paymentMethod } = req.body;
+    const { items, shippingAddress, paymentMethod, voucherCode } = req.body;
 
     if (!items || !Array.isArray(items) || items.length === 0 || !shippingAddress) {
       return next(new AppError('Items and shipping address are required.', 400));
@@ -75,7 +76,30 @@ export const createOrder = async (
 
     // 2. Compute shipping fee (30,000₫, free if >= 500,000₫)
     const shippingFee = subtotal >= 500000 ? 0 : 30000;
-    const total = subtotal + shippingFee;
+    let total = subtotal + shippingFee;
+    let discount = 0;
+
+    if (voucherCode) {
+      const now = new Date();
+      const voucher = await Voucher.findOne({
+        code: voucherCode.toUpperCase(),
+        isActive: true,
+        startDate: { $lte: now },
+        endDate: { $gte: now }
+      });
+
+      if (voucher && subtotal >= voucher.minOrderValue) {
+        if (voucher.discountType === 'PERCENTAGE') {
+          discount = subtotal * (voucher.discountValue / 100);
+          if (voucher.maxDiscountValue) {
+            discount = Math.min(discount, voucher.maxDiscountValue);
+          }
+        } else if (voucher.discountType === 'FIXED') {
+          discount = voucher.discountValue;
+        }
+        total = Math.max(0, total - discount);
+      }
+    }
 
     // Deduct product stock
     for (const item of items) {
@@ -90,6 +114,8 @@ export const createOrder = async (
       status: 'PENDING',
       shippingAddress,
       paymentMethod,
+      voucherCode,
+      discount,
       payment: {
         method: paymentMethod,
         status: 'PENDING'

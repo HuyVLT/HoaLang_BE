@@ -20,6 +20,8 @@ export interface IOrder {
     province: string;
   };
   paymentMethod?: string;
+  voucherCode?: string;
+  discount?: number;
   payment: {
     method: 'COD' | 'PAYOS';
     status: 'PENDING' | 'PAID' | 'CANCELLED' | 'FAILED';
@@ -62,6 +64,8 @@ export const OrderSchema = new Schema<IOrder>(
       province: { type: String },
     },
     paymentMethod: { type: String },
+    voucherCode: { type: String },
+    discount: { type: Number, default: 0 },
     payment: {
       method: { type: String, enum: ['COD', 'PAYOS'], default: 'COD' },
       status: { type: String, enum: ['PENDING', 'PAID', 'CANCELLED', 'FAILED'], default: 'PENDING' },
