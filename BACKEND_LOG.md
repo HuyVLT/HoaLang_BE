@@ -486,3 +486,49 @@ Hệ thống Backend của HoaLang được viết trên nền tảng **Express 
 4. **Environment Variables Separation**:
    - Sửa đổi [.env](file:///c:/Project%20Web/Multi-Tenant/HoaLang/hoalang-be/.env): Tạo các khối chú thích rõ ràng phân vùng cho Local Development và Production Deployment đối với các biến `CLIENT_URL`, `BACKEND_URL`, và các đường dẫn hoàn tất giao dịch PayOS (`PAYOS_RETURN_URL`, `PAYOS_CANCEL_URL`).
 
+
+---
+
+### [2026-06-03] Express Trust Proxy Configuration for HTTPS OAuth Callback Resolution
+
+#### Tác vụ hoàn thành
+- Cấu hình `app.set('trust proxy', 1)` trong Express để nhận diện chính xác các header của reverse proxy (như `x-forwarded-proto`).
+- Khắc phục lỗi Passport.js tự động sinh callback URL dạng `http://` thay vì `https://` khi chạy sau mạng lưới phân phối (proxy) của Render, giúp loại bỏ hoàn toàn lỗi `redirect_uri_mismatch` từ Google OAuth.
+
+#### Chi tiết kỹ thuật & File thay đổi
+1. **Express App Bootstrap**:
+   - Sửa đổi [app.ts](file:///d:/HoaLang/HoaLang_BE/src/app.ts): Thêm dòng `app.set('trust proxy', 1)` ngay sau khi khởi tạo Express app instance.
+---
+
+### [2026-06-03] Remove Nodemailer Dependency & Sync SendGrid Environment Variables
+
+#### Tác vụ hoàn thành
+- Cập nhật chính thức tệp `.env` đồng bộ cấu hình SendGrid Web API, loại bỏ hoàn toàn các cấu hình SMTP/Nodemailer cũ để tương thích 100% với môi trường cloud/PaaS của Render vốn chặn cổng SMTP (ports 587/465/25).
+- Dọn dẹp mã nguồn sạch sẽ bằng cách gỡ bỏ thư viện `nodemailer` và gói định nghĩa kiểu `@types/nodemailer` ra khỏi dự án do không còn sử dụng (hệ thống đã được chuyển hoàn toàn qua SendGrid Web API ở cổng HTTPS - Port 443).
+- Chạy cập nhật lockfile `pnpm-lock.yaml` và kiểm tra biên dịch (`tsc`) thành công 100% không có lỗi.
+
+#### Chi tiết kỹ thuật & File thay đổi
+1. **Environment Configuration**:
+   - Sửa đổi [.env](file:///c:/Project%20Web/Multi-Tenant/HoaLang/hoalang-be/.env): Thay thế toàn bộ khối cấu hình SMTP/Nodemailer cũ bằng cấu hình `SENDGRID_API_KEY` và `SENDGRID_FROM` chính thức trong cả hai phân vùng Local (Khối A) và Production (Khối B).
+2. **Package Clean Up**:
+   - Sửa đổi [package.json](file:///c:/Project%20Web/Multi-Tenant/HoaLang/hoalang-be/package.json): Xóa bỏ `"nodemailer"` và `"@types/nodemailer"` khỏi phần `dependencies`.
+   - Khởi chạy lệnh `pnpm install` cập nhật dependencies trong `node_modules` và đồng bộ `pnpm-lock.yaml`.
+
+---
+
+### [2026-06-03] Switch Package Manager from pnpm to npm
+
+#### Tác vụ hoàn thành
+- Chuyển đổi toàn diện trình quản lý gói của Backend từ `pnpm` sang `npm` để đồng bộ hóa quy trình phát triển cục bộ và phân phối sản phẩm.
+- Khởi tạo tệp khóa `package-lock.json` thông qua lệnh cài đặt an toàn `npm install --legacy-peer-deps`.
+- Cấu hình lại tệp tin bỏ qua của git `.gitignore` và Dockerfile tương thích hoàn toàn với cơ chế cài đặt của `npm`.
+- Xác nhận biên dịch TypeScript dự án (`npm run build`) thành công 100% không có lỗi.
+
+#### Chi tiết kỹ thuật & File thay đổi
+1. **Dependency Configuration**:
+   - Sửa đổi [package.json](file:///c:/Project%20Web/Multi-Tenant/HoaLang/hoalang-be/package.json): Loại bỏ trường chỉ định `"packageManager": "pnpm@10.16.1"`.
+   - Sửa đổi [.gitignore](file:///c:/Project%20Web/Multi-Tenant/HoaLang/hoalang-be/.gitignore): Loại bỏ `package-lock.json` khỏi danh sách bỏ qua và thêm `pnpm-lock.yaml` để Git theo dõi tệp khóa của npm và bỏ qua tệp của pnpm.
+2. **Dockerfile Refactoring**:
+   - Sửa đổi [Dockerfile](file:///c:/Project%20Web/Multi-Tenant/HoaLang/hoalang-be/Dockerfile): Thay thế toàn bộ các tiến trình cài đặt của `pnpm` bằng `npm` tương ứng với cờ `--legacy-peer-deps` để giải quyết xung đột peer dependency và build mã nguồn bằng `npm run build`.
+3. **Lockfile Switch**:
+   - Xóa bỏ `pnpm-lock.yaml` và sinh mới thành công `package-lock.json`.
