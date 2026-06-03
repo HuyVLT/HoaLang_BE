@@ -2,29 +2,24 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Enable PNPM package manager
-RUN npm install -g pnpm
-
-COPY package.json pnpm-lock.yaml* ./
+COPY package.json package-lock.json* ./
 
 # Install development packages
-RUN pnpm install
+RUN npm install --legacy-peer-deps
 
 COPY . .
 
 # Compile TS code to JavaScript
-RUN pnpm build
+RUN npm run build
 
 FROM node:20-alpine AS runner
 
 WORKDIR /app
 
-RUN npm install -g pnpm
-
-COPY package.json pnpm-lock.yaml* ./
+COPY package.json package-lock.json* ./
 
 # Install production-only packages
-RUN pnpm install --prod
+RUN npm install --only=production --legacy-peer-deps
 
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/tsconfig.json ./
