@@ -486,3 +486,18 @@ Hệ thống Backend của HoaLang được viết trên nền tảng **Express 
 4. **Environment Variables Separation**:
    - Sửa đổi [.env](file:///c:/Project%20Web/Multi-Tenant/HoaLang/hoalang-be/.env): Tạo các khối chú thích rõ ràng phân vùng cho Local Development và Production Deployment đối với các biến `CLIENT_URL`, `BACKEND_URL`, và các đường dẫn hoàn tất giao dịch PayOS (`PAYOS_RETURN_URL`, `PAYOS_CANCEL_URL`).
 
+---
+
+### [2026-06-03] Remove Nodemailer Dependency & Sync SendGrid Environment Variables
+
+#### Tác vụ hoàn thành
+- Cập nhật chính thức tệp `.env` đồng bộ cấu hình SendGrid Web API, loại bỏ hoàn toàn các cấu hình SMTP/Nodemailer cũ để tương thích 100% với môi trường cloud/PaaS của Render vốn chặn cổng SMTP (ports 587/465/25).
+- Dọn dẹp mã nguồn sạch sẽ bằng cách gỡ bỏ thư viện `nodemailer` và gói định nghĩa kiểu `@types/nodemailer` ra khỏi dự án do không còn sử dụng (hệ thống đã được chuyển hoàn toàn qua SendGrid Web API ở cổng HTTPS - Port 443).
+- Chạy cập nhật lockfile `pnpm-lock.yaml` và kiểm tra biên dịch (`tsc`) thành công 100% không có lỗi.
+
+#### Chi tiết kỹ thuật & File thay đổi
+1. **Environment Configuration**:
+   - Sửa đổi [.env](file:///c:/Project%20Web/Multi-Tenant/HoaLang/hoalang-be/.env): Thay thế toàn bộ khối cấu hình SMTP/Nodemailer cũ bằng cấu hình `SENDGRID_API_KEY` và `SENDGRID_FROM` chính thức trong cả hai phân vùng Local (Khối A) và Production (Khối B).
+2. **Package Clean Up**:
+   - Sửa đổi [package.json](file:///c:/Project%20Web/Multi-Tenant/HoaLang/hoalang-be/package.json): Xóa bỏ `"nodemailer"` và `"@types/nodemailer"` khỏi phần `dependencies`.
+   - Khởi chạy lệnh `pnpm install` cập nhật dependencies trong `node_modules` và đồng bộ `pnpm-lock.yaml`.
