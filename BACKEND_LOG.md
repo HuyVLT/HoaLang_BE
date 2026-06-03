@@ -501,3 +501,22 @@ Hệ thống Backend của HoaLang được viết trên nền tảng **Express 
 2. **Package Clean Up**:
    - Sửa đổi [package.json](file:///c:/Project%20Web/Multi-Tenant/HoaLang/hoalang-be/package.json): Xóa bỏ `"nodemailer"` và `"@types/nodemailer"` khỏi phần `dependencies`.
    - Khởi chạy lệnh `pnpm install` cập nhật dependencies trong `node_modules` và đồng bộ `pnpm-lock.yaml`.
+
+---
+
+### [2026-06-03] Switch Package Manager from pnpm to npm
+
+#### Tác vụ hoàn thành
+- Chuyển đổi toàn diện trình quản lý gói của Backend từ `pnpm` sang `npm` để đồng bộ hóa quy trình phát triển cục bộ và phân phối sản phẩm.
+- Khởi tạo tệp khóa `package-lock.json` thông qua lệnh cài đặt an toàn `npm install --legacy-peer-deps`.
+- Cấu hình lại tệp tin bỏ qua của git `.gitignore` và Dockerfile tương thích hoàn toàn với cơ chế cài đặt của `npm`.
+- Xác nhận biên dịch TypeScript dự án (`npm run build`) thành công 100% không có lỗi.
+
+#### Chi tiết kỹ thuật & File thay đổi
+1. **Dependency Configuration**:
+   - Sửa đổi [package.json](file:///c:/Project%20Web/Multi-Tenant/HoaLang/hoalang-be/package.json): Loại bỏ trường chỉ định `"packageManager": "pnpm@10.16.1"`.
+   - Sửa đổi [.gitignore](file:///c:/Project%20Web/Multi-Tenant/HoaLang/hoalang-be/.gitignore): Loại bỏ `package-lock.json` khỏi danh sách bỏ qua và thêm `pnpm-lock.yaml` để Git theo dõi tệp khóa của npm và bỏ qua tệp của pnpm.
+2. **Dockerfile Refactoring**:
+   - Sửa đổi [Dockerfile](file:///c:/Project%20Web/Multi-Tenant/HoaLang/hoalang-be/Dockerfile): Thay thế toàn bộ các tiến trình cài đặt của `pnpm` bằng `npm` tương ứng với cờ `--legacy-peer-deps` để giải quyết xung đột peer dependency và build mã nguồn bằng `npm run build`.
+3. **Lockfile Switch**:
+   - Xóa bỏ `pnpm-lock.yaml` và sinh mới thành công `package-lock.json`.
