@@ -9,6 +9,7 @@ import {
   getExperiences
 } from './payment.controller';
 import { resolveTenant, requireTenantDb } from '../../middleware/tenant.middleware';
+import { resolveUserOptional } from '../../middleware/auth.middleware';
 
 const router = Router();
 
@@ -18,8 +19,8 @@ router.post('/payment/payos/webhook/:tenantId', handlePayOSWebhook);
 
 // ── Tenant-scoped payment endpoints ──────────────────────────────────────────
 // These routes are prefixed with tenant context resolvers
-router.post('/orders', resolveTenant, requireTenantDb, createOrder);
-router.post('/bookings', resolveTenant, requireTenantDb, createBooking);
+router.post('/orders', resolveTenant, requireTenantDb, resolveUserOptional, createOrder);
+router.post('/bookings', resolveTenant, requireTenantDb, resolveUserOptional, createBooking);
 router.get('/payment/status/:orderCode', resolveTenant, requireTenantDb, getPaymentStatus);
 router.post('/payment/payos/cancel/:orderCode', resolveTenant, requireTenantDb, cancelPayment);
 router.get('/tenant/payment-methods', resolveTenant, requireTenantDb, getPaymentMethods);
