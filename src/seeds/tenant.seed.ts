@@ -22,7 +22,7 @@ const TENANTS_TO_SEED = [
   {
     slug: 'bat-trang',
     name: 'Làng Gốm Bát Tràng',
-    domain: 'battrang.hoalang.vn',
+    domain: 'battrang.hoalang.site',
     features: { ecommerce: true, booking: true, aiAssistant: true },
     theme: { primaryColor: '#8B5A2B', logo: '/logos/bat-trang.svg' },
     payosConfig: {
@@ -35,7 +35,7 @@ const TENANTS_TO_SEED = [
   {
     slug: 'van-phuc',
     name: 'Làng Lụa Vạn Phúc',
-    domain: 'vanphuc.hoalang.vn',
+    domain: 'vanphuc.hoalang.site',
     features: { ecommerce: true, booking: true, aiAssistant: false },
     theme: { primaryColor: '#8B1A1A', logo: '/logos/van-phuc.svg' },
     payosConfig: {
@@ -48,7 +48,7 @@ const TENANTS_TO_SEED = [
   {
     slug: 'non-nuoc',
     name: 'Làng Đá Mỹ Nghệ Non Nước',
-    domain: 'nonnuoc.hoalang.vn',
+    domain: 'nonnuoc.hoalang.site',
     features: { ecommerce: true, booking: false, aiAssistant: false },
     theme: { primaryColor: '#4A5568', logo: '/logos/non-nuoc.svg' },
     payosConfig: {

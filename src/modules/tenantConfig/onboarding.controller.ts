@@ -23,7 +23,7 @@ export const createTenantOnboarding = async (
     }
 
     const cleanSlug = slug.toLowerCase().trim().replace(/\s+/g, '-');
-    const domain = `${cleanSlug}.hoalang.vn`;
+    const domain = `${cleanSlug}.hoalang.site`;
 
     // 1. Validate no duplicate slug or domain
     const duplicate = await Tenant.findOne({ $or: [{ slug: cleanSlug }, { domain }] });

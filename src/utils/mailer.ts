@@ -7,7 +7,7 @@ if (process.env.SENDGRID_API_KEY) {
 }
 
 const getSenderInfo = () => {
-  const fromEnv = process.env.SENDGRID_FROM || process.env.SMTP_FROM || 'no-reply@hoalang.vn';
+  const fromEnv = process.env.SENDGRID_FROM || process.env.SMTP_FROM || 'no-reply@hoalang.site';
   // Check if format is "Name" <email@domain> or Name <email@domain>
   const match = fromEnv.match(/^"([^"]+)"\s*<([^>]+)>/) || fromEnv.match(/^([^<]+)<([^>]+)>/);
   if (match) {

@@ -23,14 +23,14 @@ Every tenant-scoped endpoint requires one of the following:
 | Method | Header / Source | Example |
 |--------|----------------|---------|
 | **Header (dev/test)** | \`x-tenant-slug\` | \`bat-trang\` |
-| **Domain (production)** | \`Host\` header | \`battrang.hoalang.vn\` |
+| **Domain (production)** | \`Host\` header | \`battrang.hoalang.site\` |
 
 #### Available Tenants (default seeds)
 | Slug | Domain | DB Name |
 |------|--------|---------|
-| \`bat-trang\` | battrang.hoalang.vn | tenant_battrang |
-| \`van-phuc\` | vanphuc.hoalang.vn | tenant_vanphuc |
-| \`non-nuoc\` | nonnuoc.hoalang.vn | tenant_nonnuoc |
+| \`bat-trang\` | battrang.hoalang.site | tenant_battrang |
+| \`van-phuc\` | vanphuc.hoalang.site | tenant_vanphuc |
+| \`non-nuoc\` | nonnuoc.hoalang.site | tenant_nonnuoc |
 
 #### Request Lifecycle
 \`\`\`
@@ -55,7 +55,7 @@ Use Bearer JWT obtained from \`POST /api/v1/auth/login\`.
         description: 'Local development server',
       },
       {
-        url: 'https://api.hoalang.vn/api/v1',
+        url: 'https://api.hoalang.site/api/v1',
         description: 'Production server',
       },
     ],
