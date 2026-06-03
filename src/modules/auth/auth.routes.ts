@@ -320,5 +320,21 @@ router.put(
   authController.updateProfile
 );
 
+/**
+ * @openapi
+ * /auth/orders:
+ *   get:
+ *     summary: Get all orders and bookings for currently logged-in user
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Orders and bookings retrieved successfully
+ *       401:
+ *         description: Unauthenticated
+ */
+router.get('/orders', protect, authController.getUserOrders);
+
 export default router;
 

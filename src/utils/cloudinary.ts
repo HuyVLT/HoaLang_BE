@@ -1,4 +1,4 @@
-import { v2 as cloudinary } from 'cloudinary';
+import { v2 as cloudinary, UploadApiErrorResponse, UploadApiResponse } from 'cloudinary';
 
 // Configure Cloudinary using environment variables
 cloudinary.config({
@@ -16,14 +16,14 @@ cloudinary.config({
 export const uploadToCloudinary = (
   fileBuffer: Buffer,
   folder: string = 'hoalang/avatars'
-): Promise<string> => {
+ ): Promise<string> => {
   return new Promise((resolve, reject) => {
     const uploadStream = cloudinary.uploader.upload_stream(
       {
         folder,
         resource_type: 'image',
       },
-      (error, result) => {
+      (error: UploadApiErrorResponse | undefined, result: UploadApiResponse | undefined) => {
         if (error) {
           console.error('[Cloudinary] Upload failed:', error);
           return reject(error);
