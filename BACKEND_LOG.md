@@ -23,6 +23,26 @@ Hệ thống Backend của HoaLang được viết trên nền tảng **Express 
 
 ## 2. Nhật ký Thay đổi chi tiết (Changelog)
 
+### [2026-06-03] Update Domain Configuration Suffix from .vn to .site
+
+#### Tác vụ hoàn thành
+- Khắc phục sự bất nhất về tên miền phụ của các Làng nghề: thay thế toàn bộ hậu tố `.hoalang.vn` bằng `.hoalang.site` (phù hợp với tên miền production chính thức của nền tảng).
+- Cấu hình lại cơ chế onboarding và seeder để đảm bảo các bản ghi chi nhánh mới/cũ đều sử dụng chính xác đuôi `.hoalang.site` nhằm tương thích với cơ chế routing trên Vercel.
+
+#### Chi tiết kỹ thuật & File thay đổi
+1. **Onboarding Domain Controller**:
+   - Sửa đổi trong [onboarding.controller.ts](file:///c:/Project%20Web/Multi-Tenant/HoaLang/hoalang-be/src/modules/tenantConfig/onboarding.controller.ts).
+   - Cập nhật logic sinh tên miền tại dòng 26: đổi `const domain = ${cleanSlug}.hoalang.vn;` thành `const domain = ${cleanSlug}.hoalang.site;`.
+2. **Database Seeders**:
+   - Sửa đổi trong [tenant.seed.ts](file:///c:/Project%20Web/Multi-Tenant/HoaLang/hoalang-be/src/seeds/tenant.seed.ts).
+   - Đổi đuôi domain của 3 làng nghề mặc định (Bát Tràng, Vạn Phúc, Non Nước) từ `.vn` thành `.site`.
+   - Tiến hành chạy thành công script `npm run seed` để thiết lập lại các bản ghi trên Atlas DB lõi.
+3. **Swagger & Mailer Configurations**:
+   - Sửa đổi trong [swagger.ts](file:///c:/Project%20Web/Multi-Tenant/HoaLang/hoalang-be/src/config/swagger.ts) và [mailer.ts](file:///c:/Project%20Web/Multi-Tenant/HoaLang/hoalang-be/src/utils/mailer.ts).
+   - Đồng bộ địa chỉ email mặc định (`no-reply@hoalang.site`) và các domain ví dụ trong tài liệu Swagger thành `.hoalang.site`.
+
+---
+
 ### [2026-06-01] Mongoose Seeder Double-Hashing and User Verification Resolution
 
 #### Tác vụ hoàn thành
