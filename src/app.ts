@@ -26,6 +26,9 @@ import voucherRoutes from './modules/voucher/voucher.routes';
 const app = express();
 const PORT = process.env.PORT ?? 5000;
 
+// Trust reverse proxy headers (crucial for Render/Nginx redirecting HTTPS correctly)
+app.set('trust proxy', 1);
+
 // ── Security & utility middleware ─────────────────────────────────────────────
 app.use(helmet());
 app.use(cors());

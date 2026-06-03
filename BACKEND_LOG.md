@@ -486,6 +486,18 @@ Hệ thống Backend của HoaLang được viết trên nền tảng **Express 
 4. **Environment Variables Separation**:
    - Sửa đổi [.env](file:///c:/Project%20Web/Multi-Tenant/HoaLang/hoalang-be/.env): Tạo các khối chú thích rõ ràng phân vùng cho Local Development và Production Deployment đối với các biến `CLIENT_URL`, `BACKEND_URL`, và các đường dẫn hoàn tất giao dịch PayOS (`PAYOS_RETURN_URL`, `PAYOS_CANCEL_URL`).
 
+
+---
+
+### [2026-06-03] Express Trust Proxy Configuration for HTTPS OAuth Callback Resolution
+
+#### Tác vụ hoàn thành
+- Cấu hình `app.set('trust proxy', 1)` trong Express để nhận diện chính xác các header của reverse proxy (như `x-forwarded-proto`).
+- Khắc phục lỗi Passport.js tự động sinh callback URL dạng `http://` thay vì `https://` khi chạy sau mạng lưới phân phối (proxy) của Render, giúp loại bỏ hoàn toàn lỗi `redirect_uri_mismatch` từ Google OAuth.
+
+#### Chi tiết kỹ thuật & File thay đổi
+1. **Express App Bootstrap**:
+   - Sửa đổi [app.ts](file:///d:/HoaLang/HoaLang_BE/src/app.ts): Thêm dòng `app.set('trust proxy', 1)` ngay sau khi khởi tạo Express app instance.
 ---
 
 ### [2026-06-03] Remove Nodemailer Dependency & Sync SendGrid Environment Variables
