@@ -420,3 +420,21 @@ Hệ thống Backend của HoaLang được viết trên nền tảng **Express 
    - Sửa đổi [app.ts](file:///d:/HoaLang/HoaLang_BE/src/app.ts): Mount định tuyến mới dưới đường dẫn `/api/v1/vouchers`.
 4. **Core Database Seeder**:
    - Sửa đổi [seed.ts](file:///d:/HoaLang/HoaLang_BE/src/seeds/seed.ts): Thêm dọn dẹp `Voucher.deleteMany({})` và seeding danh sách 3 voucher lớn: `HOALANG10`, `BATTRANG20`, `VANPHUC50K` có đầy đủ dịch thuật 5 ngôn ngữ.
+
+### [2026-06-03] TypeScript Build Resolution for PaaS/Render Deployments & Environment Separation
+
+#### Tác vụ hoàn thành
+- Khắc phục triệt để lỗi biên dịch TypeScript (`tsc`) khi triển khai ứng dụng Backend lên các môi trường cloud (Render, Heroku, v.v.).
+- Giải quyết lỗi không thể nhận diện các đối tượng toàn cục của Node (`process`, `console`, `Buffer`, `crypto`) và các module nghiệp vụ như `express`, `@payos/node` do cơ chế bỏ qua cài đặt `devDependencies` trong môi trường sản xuất (`NODE_ENV=production`) của npm/pnpm.
+- Loại bỏ thuộc tính `"types": ["node"]` trong `tsconfig.json` vốn gây cản trở TypeScript tự động nạp các tệp định nghĩa kiểu `@types/*` khác khi import module.
+- Di chuyển `typescript`, `ts-node`, và `tsconfig-paths` từ `devDependencies` sang `dependencies` trong `package.json` để đảm bảo chúng luôn được cài đặt đầy đủ trong quá trình build production.
+- Phân chia gọn gàng cấu hình môi trường giữa môi trường cục bộ (Local Development) và triển khai thực tế (Production Deployment) trong tệp `.env` sử dụng chú thích.
+
+#### Chi tiết kỹ thuật & File thay đổi
+1. **Typings & Compiler Relocation**:
+   - Sửa đổi [package.json](file:///c:/Project%20Web/Multi-Tenant/HoaLang/hoalang-be/package.json): Di chuyển toàn bộ các gói định nghĩa kiểu dữ liệu `@types/*` (gồm `@types/node`, `@types/express`, `@types/jsonwebtoken`, `@types/cors`, `@types/bcrypt`, v.v.) và các công cụ dịch (`typescript`, `ts-node`, `tsconfig-paths`) từ `devDependencies` sang `dependencies`. Điều này đảm bảo khi cài đặt dependencies trong môi trường Production, các kiểu dữ liệu và lệnh biên dịch luôn sẵn sàng.
+2. **TSConfig Types Enforcement**:
+   - Sửa đổi [tsconfig.json](file:///c:/Project%20Web/Multi-Tenant/HoaLang/hoalang-be/tsconfig.json): Loại bỏ `"types": ["node"]` ở `compilerOptions` để TypeScript tự động nạp toàn bộ các `@types` đã cài đặt từ thư mục `node_modules/@types` nhằm phân giải tất cả module import và Node globals.
+3. **Environment Variables Separation**:
+   - Sửa đổi [.env](file:///c:/Project%20Web/Multi-Tenant/HoaLang/hoalang-be/.env): Tạo các khối chú thích rõ ràng phân vùng cho Local Development và Production Deployment đối với các biến `CLIENT_URL`, `BACKEND_URL`, và các đường dẫn hoàn tất giao dịch PayOS (`PAYOS_RETURN_URL`, `PAYOS_CANCEL_URL`).
+
