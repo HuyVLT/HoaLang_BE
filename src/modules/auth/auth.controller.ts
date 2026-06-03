@@ -4,6 +4,13 @@ import { authService } from './auth.service';
 import { sendResponse } from '../../utils/response';
 import { AppError } from '../../middleware/error.middleware';
 import { uploadToCloudinary } from '../../utils/cloudinary';
+import { UserTenantRole } from '../../models/core/UserTenantRole.model';
+import { Tenant } from '../../models/core/Tenant.model';
+import { getTenantConnection } from '../../config/tenantConnection';
+import { getOrderModel } from '../../models/tenant/Order.schema';
+import { getBookingModel } from '../../models/tenant/Booking.schema';
+import { getProductModel } from '../../models/tenant/Product.schema';
+import { getExperienceModel } from '../../models/tenant/Experience.schema';
 
 export class AuthController {
   /**
@@ -46,6 +53,14 @@ export class AuthController {
         const userObj = user.toObject();
         delete userObj.password;
 
+        // Query user's tenants
+        const userTenantRoles = await UserTenantRole.find({ userId: userObj._id }).populate('tenantId');
+        userObj.tenants = userTenantRoles.map((utr: any) => ({
+          slug: utr.tenantId?.slug,
+          name: utr.tenantId?.name,
+          role: utr.role,
+        })).filter((t: any) => t.slug);
+
         sendResponse(
           res,
           200,
@@ -79,14 +94,26 @@ export class AuthController {
   /**
    * Return logged-in user profile details
    */
-  public getMe = (req: Request, res: Response): void => {
-    if (!req.user) {
-      throw new AppError('Not authenticated.', 401);
-    }
-    const userObj = (req.user as any).toObject();
-    delete userObj.password;
+  public getMe = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      if (!req.user) {
+        throw new AppError('Not authenticated.', 401);
+      }
+      const userObj = (req.user as any).toObject();
+      delete userObj.password;
 
-    sendResponse(res, 200, true, userObj, 'Profile retrieved successfully.');
+      // Query user's tenants
+      const userTenantRoles = await UserTenantRole.find({ userId: userObj._id }).populate('tenantId');
+      userObj.tenants = userTenantRoles.map((utr: any) => ({
+        slug: utr.tenantId?.slug,
+        name: utr.tenantId?.name,
+        role: utr.role,
+      })).filter((t: any) => t.slug);
+
+      sendResponse(res, 200, true, userObj, 'Profile retrieved successfully.');
+    } catch (err) {
+      next(err);
+    }
   };
 
   /**
@@ -227,8 +254,95 @@ export class AuthController {
       next(err);
     }
   };
+
+  /**
+   * Get orders and bookings history for currently logged-in user across all active tenant databases
+   */
+  public getUserOrders = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      if (!req.user) {
+        throw new AppError('Not authenticated.', 401);
+      }
+      const userId = (req.user as any)._id;
+
+      // 1. Fetch active tenants from core DB
+      const tenants = await Tenant.find({ status: 'ACTIVE' });
+
+      const allOrders: any[] = [];
+      const allBookings: any[] = [];
+
+      // 2. Loop through each tenant and query orders & bookings
+      for (const tenant of tenants) {
+        try {
+          const tenantDb = await getTenantConnection(tenant.dbName);
+          
+          // Register models on tenant connection to allow populate
+          const Product = getProductModel(tenantDb);
+          const Experience = getExperienceModel(tenantDb);
+          const Order = getOrderModel(tenantDb);
+          const Booking = getBookingModel(tenantDb);
+
+          // Fetch orders and populate products
+          const orders = await Order.find({ userId })
+            .populate({
+              path: 'items.productId',
+              model: Product
+            })
+            .sort({ createdAt: -1 });
+
+          const mappedOrders = orders.map(o => {
+            const orderObj = o.toObject();
+            return {
+              ...orderObj,
+              tenant: {
+                slug: tenant.slug,
+                name: tenant.name
+              },
+              type: 'product'
+            };
+          });
+          allOrders.push(...mappedOrders);
+
+          // Fetch bookings and populate experience
+          const bookings = await Booking.find({ userId })
+            .populate({
+              path: 'experienceId',
+              model: Experience
+            })
+            .sort({ createdAt: -1 });
+
+          const mappedBookings = bookings.map(b => {
+            const bookingObj = b.toObject();
+            return {
+              ...bookingObj,
+              tenant: {
+                slug: tenant.slug,
+                name: tenant.name
+              },
+              type: 'booking'
+            };
+          });
+          allBookings.push(...mappedBookings);
+        } catch (dbErr) {
+          console.error(`[getUserOrders] Failed to query tenant ${tenant.slug}:`, dbErr);
+        }
+      }
+
+      // Combine and sort by createdAt descending
+      const combined = [...allOrders, ...allBookings].sort((a, b) => {
+        const dateA = new Date(a.createdAt || 0).getTime();
+        const dateB = new Date(b.createdAt || 0).getTime();
+        return dateB - dateA;
+      });
+
+      sendResponse(res, 200, true, combined, 'Retrieved user orders and bookings history successfully.');
+    } catch (err) {
+      next(err);
+    }
+  };
 }
 
 export const authController = new AuthController();
 export default authController;
+
 

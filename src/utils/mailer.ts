@@ -1,13 +1,25 @@
-import nodemailer from 'nodemailer';
+import sgMail from '@sendgrid/mail';
 
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'smtp.mailtrap.io', // Fallback to a dev mailer
-  port: parseInt(process.env.SMTP_PORT || '2525'),
-  auth: {
-    user: process.env.SMTP_USER || '',
-    pass: process.env.SMTP_PASS || '',
-  },
-});
+if (process.env.SENDGRID_API_KEY) {
+  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+} else {
+  console.warn('[Mailer] WARNING: SENDGRID_API_KEY is not defined in environment variables.');
+}
+
+const getSenderInfo = () => {
+  const fromEnv = process.env.SENDGRID_FROM || process.env.SMTP_FROM || 'no-reply@hoalang.vn';
+  // Check if format is "Name" <email@domain> or Name <email@domain>
+  const match = fromEnv.match(/^"([^"]+)"\s*<([^>]+)>/) || fromEnv.match(/^([^<]+)<([^>]+)>/);
+  if (match) {
+    return {
+      name: match[1].trim(),
+      email: match[2].trim(),
+    };
+  }
+  return {
+    email: fromEnv.trim(),
+  };
+};
 
 export const sendVerificationEmail = async (
   email: string,
@@ -20,9 +32,10 @@ export const sendVerificationEmail = async (
   const resolvedLocale = locale === 'en' ? 'en' : 'vi';
   const verificationUrl = `${clientUrl}/${resolvedLocale}/auth/verify-account?token=${token}`;
 
+  const sender = getSenderInfo();
   const mailOptions = {
-    from: process.env.SMTP_FROM || '"HoaLang" <no-reply@hoalang.vn>',
     to: email,
+    from: sender,
     subject: '[HoaLang] Kích hoạt tài khoản của bạn / Activate your account',
     html: `
       <div style="font-family: 'Be Vietnam Pro', Helvetica, Arial, sans-serif; background-color: #F5F0E8; padding: 40px 20px; color: #1A1208; max-width: 600px; margin: 0 auto; border: 1px solid #D4C9B5; border-radius: 3px;">
@@ -59,10 +72,10 @@ export const sendVerificationEmail = async (
   };
 
   try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log(`[Mailer] Verification email sent to ${email}. MessageId: ${info.messageId}`);
+    const response = await sgMail.send(mailOptions);
+    console.log(`[Mailer] Verification email sent to ${email} via SendGrid. Response status: ${response[0].statusCode}`);
   } catch (error) {
-    console.error(`[Mailer] Failed to send email to ${email}:`, error);
+    console.error(`[Mailer] Failed to send email to ${email} via SendGrid:`, error);
     throw error;
   }
 };
@@ -77,9 +90,10 @@ export const sendResetPasswordEmail = async (
   const resolvedLocale = locale === 'en' ? 'en' : 'vi';
   const resetUrl = `${clientUrl}/${resolvedLocale}/auth/reset-password?token=${token}`;
 
+  const sender = getSenderInfo();
   const mailOptions = {
-    from: process.env.SMTP_FROM || '"HoaLang" <no-reply@hoalang.vn>',
     to: email,
+    from: sender,
     subject: resolvedLocale === 'en' ? '[HoaLang] Reset your password' : '[HoaLang] Khôi phục mật khẩu của bạn',
     html: `
       <div style="font-family: 'Be Vietnam Pro', Helvetica, Arial, sans-serif; background-color: #F5F0E8; padding: 40px 20px; color: #1A1208; max-width: 600px; margin: 0 auto; border: 1px solid #D4C9B5; border-radius: 3px;">
@@ -125,10 +139,10 @@ export const sendResetPasswordEmail = async (
   };
 
   try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log(`[Mailer] Reset password email sent to ${email}. MessageId: ${info.messageId}`);
+    const response = await sgMail.send(mailOptions);
+    console.log(`[Mailer] Reset password email sent to ${email} via SendGrid. Response status: ${response[0].statusCode}`);
   } catch (error) {
-    console.error(`[Mailer] Failed to send reset email to ${email}:`, error);
+    console.error(`[Mailer] Failed to send reset email to ${email} via SendGrid:`, error);
     throw error;
   }
 };

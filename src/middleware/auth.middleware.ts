@@ -49,5 +49,33 @@ export const checkAccessToken = asyncHandler(
 // Maintain compatibility with existing 'protect' middleware name
 export const protect = checkAccessToken;
 
+export const resolveUserOptional = async (
+  req: Request,
+  _res: Response,
+  next: NextFunction
+): Promise<void> => {
+  let token = '';
+
+  if (
+    req.headers.authorization &&
+    req.headers.authorization.startsWith('Bearer')
+  ) {
+    token = req.headers.authorization.split(' ')[1];
+  }
+
+  if (token) {
+    try {
+      const decoded = verifyAccessToken(token);
+      const currentUser = await User.findById(decoded.userId);
+      if (currentUser && currentUser.status !== 'BLOCKED') {
+        req.user = currentUser;
+      }
+    } catch (err) {
+      // Ignore token errors for optional auth resolver
+    }
+  }
+  next();
+};
+
 export default checkAccessToken;
 

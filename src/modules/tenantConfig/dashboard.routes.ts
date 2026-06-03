@@ -6,7 +6,7 @@ import {
 } from './payosConfig.controller';
 import { resolveTenant, requireTenantDb } from '../../middleware/tenant.middleware';
 import { checkAccessToken } from '../../middleware/auth.middleware';
-import { restrictTo } from '../../middleware/role.middleware';
+import { restrictTo, requireTenantRole } from '../../middleware/role.middleware';
 
 const router = Router();
 
@@ -15,6 +15,7 @@ router.use(resolveTenant);
 router.use(requireTenantDb);
 router.use(checkAccessToken);
 router.use(restrictTo('VILLAGE_OWNER', 'ADMIN'));
+router.use(requireTenantRole('OWNER'));
 
 // Merchant PayOS settings endpoints
 router.get('/payos/config', getPayOSConfig);

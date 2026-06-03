@@ -218,6 +218,20 @@ Hệ thống Backend của HoaLang được viết trên nền tảng **Express 
 
 ## 2. Nhật ký Thay đổi chi tiết (Changelog)
 
+### [2026-06-03] Configure PayOS Redirect URLs for Local Development Environment
+
+#### Tác vụ hoàn thành
+- Khắc phục lỗi thanh toán thành công trên cổng PayOS nhưng đơn hàng local bị kẹt ở trạng thái `PENDING` và hiển thị trang trắng.
+- Cấu hình các biến môi trường redirection cụ thể cho PayOS để định hướng người dùng quay lại client local thay vì mặc định về production.
+
+#### Chi tiết kỹ thuật & File thay đổi
+1. **PayOS Environment Variables Configuration**:
+   - Thay đổi trong tệp [.env](file:///d:/HoaLang/HoaLang_BE/.env).
+   - Thêm hai cấu hình môi trường mới: `PAYOS_RETURN_URL=http://localhost:3000/payment/success` và `PAYOS_CANCEL_URL=http://localhost:3000/payment/cancel`.
+   - Điều này đảm bảo rằng các đường link thanh toán được sinh ra ở máy local sẽ hướng khách hàng quay trở lại cổng Next.js local (đã tích hợp logic đồng bộ trạng thái đơn hàng) sau khi thanh toán hoặc hủy thanh toán, thay vì hướng về trang web production trực tuyến `https://hoalang.site`.
+
+---
+
 ### [2026-06-01] Mongoose Seeder Double-Hashing and User Verification Resolution
 
 #### Tác vụ hoàn thành
@@ -421,6 +435,37 @@ Hệ thống Backend của HoaLang được viết trên nền tảng **Express 
 4. **Core Database Seeder**:
    - Sửa đổi [seed.ts](file:///d:/HoaLang/HoaLang_BE/src/seeds/seed.ts): Thêm dọn dẹp `Voucher.deleteMany({})` và seeding danh sách 3 voucher lớn: `HOALANG10`, `BATTRANG20`, `VANPHUC50K` có đầy đủ dịch thuật 5 ngôn ngữ.
 
+---
+
+### [2026-06-03] User Tenants Mapping & Secured Dashboard Routes
+
+#### Tác vụ hoàn thành
+- Tích hợp thêm trường `tenants` liên kết của người dùng trong kết quả trả về của các API Đăng nhập (`/auth/login`) và API Lấy thông tin cá nhân (`/auth/me`).
+- Nâng cao tính bảo mật và cô lập dữ liệu cho Bảng quản trị của từng Tenant (multi-tenant isolation) bằng cách bắt buộc kiểm tra xem Owner có quyền sở hữu của Tenant tương ứng thông qua middleware `requireTenantRole`.
+
+#### Chi tiết kỹ thuật & File thay đổi
+1. **Auth Controller**:
+   - Sửa đổi [auth.controller.ts](file:///d:/HoaLang/HoaLang_BE/src/modules/auth/auth.controller.ts): Nhập `UserTenantRole` model. Trong phương thức `login` và `getMe`, tự động truy vấn danh sách `UserTenantRole` thuộc về người dùng hiện tại, populate thông tin chi tiết của `Tenant` và trả về mảng `tenants` chứa thông tin `slug`, `name`, và vai trò `role` cục bộ.
+2. **Merchant Dashboard Routes Security**:
+   - Sửa đổi [dashboard.routes.ts](file:///d:/HoaLang/HoaLang_BE/src/modules/tenantConfig/dashboard.routes.ts): Bổ sung thêm middleware `requireTenantRole('OWNER')` vào đường dẫn định tuyến cấu hình. Thiết lập này ngăn chặn triệt để lỗ hổng bảo mật nơi một VILLAGE_OWNER của làng nghề này có thể xem/chỉnh sửa hoặc ngắt kết nối cấu hình cổng PayOS của một làng nghề khác bằng cách thay đổi header `x-tenant-slug` thủ công.
+
+---
+
+### [2026-06-03] SendGrid Web API Integration
+
+#### Tác vụ hoàn thành
+- Chuyển đổi cơ chế gửi mail từ SMTP Nodemailer sang SendGrid Web API (Cổng HTTPS - Port 443) để khắc phục tình trạng bị chặn cổng SMTP trên các dịch vụ Hosting/PaaS giới hạn cổng như Render hoặc Vercel.
+- Cập nhật các biến cấu hình môi trường tương ứng trong file `.env`.
+
+#### Chi tiết kỹ thuật & File thay đổi
+1. **Mailer Utility**:
+   - Thay đổi trong [mailer.ts](file:///d:/HoaLang/HoaLang_BE/src/utils/mailer.ts).
+   - Loại bỏ `nodemailer` và tích hợp SDK chính thức `@sendgrid/mail`.
+   - Viết hàm `getSenderInfo()` hỗ trợ phân tách tên hiển thị và email từ biến môi trường `SENDGRID_FROM` hoặc `SMTP_FROM`.
+   - Cập nhật hàm `sendVerificationEmail` và `sendResetPasswordEmail` sử dụng `sgMail.send()` thay thế cho `transporter.sendMail()`.
+2. **Environment Configuration**:
+   - Thay đổi trong [.env](file:///d:/HoaLang/HoaLang_BE/.env).
+   - Loại bỏ các biến cấu hình SMTP và thay bằng `SENDGRID_API_KEY` và `SENDGRID_FROM`.
 ### [2026-06-03] TypeScript Build Resolution for PaaS/Render Deployments & Environment Separation
 
 #### Tác vụ hoàn thành

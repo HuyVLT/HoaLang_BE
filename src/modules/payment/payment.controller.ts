@@ -144,8 +144,12 @@ export const createOrder = async (
         items: payosItems,
         buyerName: shippingAddress.fullName,
         buyerPhone: shippingAddress.phone,
-        cancelUrl: process.env.PAYOS_CANCEL_URL || 'https://hoalang.site/payment/cancel',
-        returnUrl: process.env.PAYOS_RETURN_URL || 'https://hoalang.site/payment/success',
+        cancelUrl: (process.env.PAYOS_CANCEL_URL || 'https://hoalang.site/payment/cancel').includes('?')
+          ? `${process.env.PAYOS_CANCEL_URL || 'https://hoalang.site/payment/cancel'}&tenant=${tenant.slug}`
+          : `${process.env.PAYOS_CANCEL_URL || 'https://hoalang.site/payment/cancel'}?tenant=${tenant.slug}`,
+        returnUrl: (process.env.PAYOS_RETURN_URL || 'https://hoalang.site/payment/success').includes('?')
+          ? `${process.env.PAYOS_RETURN_URL || 'https://hoalang.site/payment/success'}&tenant=${tenant.slug}`
+          : `${process.env.PAYOS_RETURN_URL || 'https://hoalang.site/payment/success'}?tenant=${tenant.slug}`,
       });
 
       // Update order payment information
@@ -247,8 +251,12 @@ export const createBooking = async (
         items: payosItems,
         buyerName: req.user?.fullName || 'Traveler',
         buyerPhone: req.user?.phone || '0900000000',
-        cancelUrl: process.env.PAYOS_CANCEL_URL || 'https://hoalang.site/payment/cancel',
-        returnUrl: process.env.PAYOS_RETURN_URL || 'https://hoalang.site/payment/success',
+        cancelUrl: (process.env.PAYOS_CANCEL_URL || 'https://hoalang.site/payment/cancel').includes('?')
+          ? `${process.env.PAYOS_CANCEL_URL || 'https://hoalang.site/payment/cancel'}&tenant=${tenant.slug}`
+          : `${process.env.PAYOS_CANCEL_URL || 'https://hoalang.site/payment/cancel'}?tenant=${tenant.slug}`,
+        returnUrl: (process.env.PAYOS_RETURN_URL || 'https://hoalang.site/payment/success').includes('?')
+          ? `${process.env.PAYOS_RETURN_URL || 'https://hoalang.site/payment/success'}&tenant=${tenant.slug}`
+          : `${process.env.PAYOS_RETURN_URL || 'https://hoalang.site/payment/success'}?tenant=${tenant.slug}`,
       });
 
       newBooking.payment.orderCode = orderCode;
