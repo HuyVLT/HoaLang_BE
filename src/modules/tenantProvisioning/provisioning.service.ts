@@ -11,6 +11,7 @@ export interface CreateTenantInput {
   features?: Partial<ITenant['features']>;
   theme?: Partial<ITenant['theme']>;
   payosConfig?: Partial<ITenant['payosConfig']>;
+  templateId?: string;
 }
 
 export interface ProvisionResult {
@@ -48,7 +49,7 @@ export class ProvisioningService {
    * initialize collections, seed defaults.
    */
   public async createTenant(input: CreateTenantInput): Promise<ProvisionResult> {
-    const { slug, name, domain, features, theme, payosConfig } = input;
+    const { slug, name, domain, features, theme, payosConfig, templateId } = input;
 
     // ── 1. Check for conflicts ───────────────────────────────────────────────
     const exists = await Tenant.findOne({ $or: [{ slug }, { domain }] });
@@ -124,7 +125,7 @@ export class ProvisioningService {
     console.log(`[Provisioning] Default CMS 'home' page seeded for '${slug}'.`);
 
     // ── 6.5 Seed default PageConfig for customization in hoalang_core ─────────
-    const starterTemplate = getStarterTemplate(slug.toLowerCase());
+    const starterTemplate = getStarterTemplate(templateId || slug.toLowerCase());
     await PageConfig.findOneAndUpdate(
       { tenantId: slug.toLowerCase() },
       {

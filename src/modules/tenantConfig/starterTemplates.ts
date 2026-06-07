@@ -88,7 +88,7 @@ export const potteryTemplate = {
             vi: 'Học cách định hình phôi gốm tròn trên bàn xoay, làm ly, chén hoặc đĩa mộc mạc.',
             en: 'Learn the core centering techniques on standard kick wheels. Make your own rustic cups or plates.',
           },
-          image: 'https://images.unsplash.com/photo-1565192647048-f997ded879ab?auto=format&fit=crop&w=600&q=80',
+          image: 'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?auto=format&fit=crop&w=600&q=80',
           price: 250000,
           duration: '2 giờ (2 hours)',
         },
@@ -127,6 +127,10 @@ export const potteryTemplate = {
           url: 'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?auto=format&fit=crop&w=800&q=80',
           caption: { vi: 'Sơn trét và tỉ mỉ nặn dán đắp nổi hoa văn rồng nổi', en: 'Intricately detailing and carving 3D dragon patterns onto clay jars' },
         },
+        {
+          url: 'https://images.unsplash.com/photo-1610701596007-11502861dcfa?auto=format&fit=crop&w=800&q=80',
+          caption: { vi: 'Tráng lớp nước men ngọc trong trẻo trước khi đưa vào hầm nung', en: 'Coating celadon jade glaze layer before putting in high temperature kiln' },
+        },
       ],
     },
     {
@@ -145,6 +149,15 @@ export const potteryTemplate = {
           author: 'Sophia Lorenz',
           role: 'Du khách từ Đức (Traveler from Germany)',
           avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&h=150&q=80',
+        },
+        {
+          quote: {
+            vi: 'Những chiếc bình men lam phục chế Lý Trần mua tại Bát Tràng mang nét sang trọng tuyệt đối khi đặt cạnh phong cách nội thất tối giản hiện đại.',
+            en: 'The blue-and-white historical vases represent absolute luxury, contrasting perfectly in my minimalist modern living space.',
+          },
+          author: 'KTS. Lê Hoàng Nam',
+          role: 'Nhà thiết kế nội thất (Interior Architect)',
+          avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&h=150&q=80',
         },
       ],
     },
@@ -187,7 +200,7 @@ export const silkTemplate = {
   templateId: 'silk-template',
   theme: {
     primaryColor: '#8B1A1A', // Cinnabar/Lacquer Red
-    accentColor: '#C4952A', // Golden Yellow
+    accentColor: '#C4952A', // Golden Yellow / Turmeric Gold
     fontHeading: 'Playfair Display',
     fontBody: 'Be Vietnam Pro',
     logo: 'https://images.unsplash.com/photo-1590736704728-f4730bb30770?w=100&h=100&fit=crop&q=80',
@@ -268,6 +281,10 @@ export const silkTemplate = {
           url: 'https://images.unsplash.com/photo-1590736704728-f4730bb30770?auto=format&fit=crop&w=800&q=80',
           caption: { vi: 'Hàng ngàn guồng tơ tằm vàng óng ả chờ se sợi dệt', en: 'Thousands of golden silk cocoon skeins awaiting twisting' },
         },
+        {
+          url: 'https://images.unsplash.com/photo-1605721911519-3dfeb3be25e7?auto=format&fit=crop&w=800&q=80',
+          caption: { vi: 'Khung dệt gỗ cổ xưa ngân vang tiếng thoi đưa nhịp nhàng', en: 'Ancient wooden looms chiming rhythmically day and night' },
+        },
       ],
     },
     {
@@ -294,6 +311,19 @@ export const silkTemplate = {
           image: 'https://images.unsplash.com/photo-1590736704728-f4730bb30770?auto=format&fit=crop&w=600&q=80',
           price: 300000,
           duration: '1.5 giờ (1.5 hours)',
+        },
+        {
+          title: {
+            vi: 'Học Dệt Lụa Trên Khung Gỗ Cổ',
+            en: 'Shuttle Weaving on Antique Looms',
+          },
+          description: {
+            vi: 'Đích thân điều khiển khung dệt, đạp chân thoi đưa dệt nên những dải băng màu lưu niệm.',
+            en: 'Control a real wooden handloom. Thread and shuttle your own colorful bookmark band.',
+          },
+          image: 'https://images.unsplash.com/photo-1605721911519-3dfeb3be25e7?auto=format&fit=crop&w=600&q=80',
+          price: 500000,
+          duration: '2 giờ (2 hours)',
         },
       ],
     },
@@ -354,8 +384,8 @@ export const silkTemplate = {
 export const minimalTemplate = {
   templateId: 'minimal-template',
   theme: {
-    primaryColor: '#2E2318', // Deep Charcoal
-    accentColor: '#7A5C2E', // Bronze
+    primaryColor: '#2E2318', // Deep Charcoal Ink
+    accentColor: '#7A5C2E', // Bronze Earthy Brown
     fontHeading: 'Cormorant Garamond',
     fontBody: 'Be Vietnam Pro',
     logo: 'https://images.unsplash.com/photo-1605721911519-3dfeb3be25e7?w=100&h=100&fit=crop&q=80',
@@ -404,13 +434,27 @@ export const minimalTemplate = {
       id: 'min-products',
       type: 'products',
       heading: {
-        vi: 'Tranh Dân Folk Độc Bản',
+        vi: 'Tranh Dân Gian Độc Bản',
         en: 'Original Folkart Woodblocks',
       },
       subheading: {
         vi: 'Những ấn phẩm rước rồng, đàn lợn chăn tằm, cá chép trông trăng dập vẽ tay.',
         en: 'Poetic prints featuring pig families, dragon dances, and carps contemplating the full moon.',
       },
+    },
+    {
+      id: 'min-gallery',
+      type: 'gallery',
+      heading: {
+        vi: 'Bảo Tồn Bản Thảo Cổ',
+        en: 'Preserving the Archaic Sketches',
+      },
+      images: [
+        {
+          url: 'https://images.unsplash.com/photo-1605721911519-3dfeb3be25e7?auto=format&fit=crop&w=800&q=80',
+          caption: { vi: 'Bộ mộc bản gõ cổ lâu đời được chạm trổ tinh tế', en: 'Centuries-old wooden blocks carved with extreme precision' },
+        },
+      ],
     },
     {
       id: 'min-cta',
@@ -429,11 +473,12 @@ export const minimalTemplate = {
   ],
 };
 
-export const getStarterTemplate = (tenantSlug: string) => {
-  if (tenantSlug === 'van-phuc') {
+export const getStarterTemplate = (key: string) => {
+  const normalized = key.toLowerCase().trim();
+  if (normalized === 'van-phuc' || normalized === 'silk-template') {
     return silkTemplate;
   }
-  if (tenantSlug === 'bat-trang') {
+  if (normalized === 'bat-trang' || normalized === 'pottery-template') {
     return potteryTemplate;
   }
   return minimalTemplate;

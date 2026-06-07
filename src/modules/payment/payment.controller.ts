@@ -6,6 +6,7 @@ import { getProductModel } from '../../models/tenant/Product.schema';
 import { getExperienceModel } from '../../models/tenant/Experience.schema';
 import { Tenant } from '../../models/core/Tenant.model';
 import { Voucher } from '../../models/core/Voucher.model';
+import { SystemLog } from '../../models/core/SystemLog.model';
 import { getTenantConnection } from '../../config/tenantConnection';
 import {
   createTenantPayOSLink,
@@ -326,9 +327,21 @@ export const handlePayOSWebhook = async (
         order.payment.status = 'PAID';
         order.payment.paidAt = new Date();
         order.status = 'PAID';
+
+        // Log transaction to SystemLog
+        const fee = Math.round(order.total * 0.05);
+        await SystemLog.create({
+          type: 'FINANCE',
+          message: `Giao dịch TXN-${orderCode} thành công. Trích thu phí hệ thống 5% (${fee.toLocaleString('vi-VN')}đ) từ ${tenant.name}.`
+        });
       } else {
         order.payment.status = 'FAILED';
         order.status = 'CANCELLED';
+
+        await SystemLog.create({
+          type: 'FINANCE',
+          message: `Giao dịch TXN-${orderCode} thất bại hoặc bị hủy từ chi nhánh ${tenant.name}.`
+        });
 
         // Revert product stock
         const Product = getProductModel(tenantDb);
@@ -348,9 +361,21 @@ export const handlePayOSWebhook = async (
           booking.payment.status = 'PAID';
           booking.payment.paidAt = new Date();
           booking.status = 'CONFIRMED';
+
+          // Log transaction to SystemLog
+          const fee = Math.round(booking.totalPrice * 0.05);
+          await SystemLog.create({
+            type: 'FINANCE',
+            message: `Giao dịch TXN-${orderCode} thành công. Trích thu phí hệ thống 5% (${fee.toLocaleString('vi-VN')}đ) từ ${tenant.name}.`
+          });
         } else {
           booking.payment.status = 'FAILED';
           booking.status = 'CANCELLED';
+
+          await SystemLog.create({
+            type: 'FINANCE',
+            message: `Giao dịch TXN-${orderCode} thất bại hoặc bị hủy từ chi nhánh ${tenant.name}.`
+          });
         }
         await booking.save();
         updated = true;
