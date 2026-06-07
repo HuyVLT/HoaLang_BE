@@ -1,6 +1,15 @@
 import { Router } from 'express';
-import { getPageConfig, updatePageConfig } from './tenantConfig.controller';
-import { createTenantOnboarding } from './onboarding.controller';
+import { getPageConfig, updatePageConfig, getAdminDashboardData } from './tenantConfig.controller';
+import {
+  createTenantOnboarding,
+  getTenantRequests,
+  approveTenantRequest,
+  rejectTenantRequest,
+  checkRequestStatus,
+  getTenants,
+} from './onboarding.controller';
+import { protect, resolveUserOptional } from '../../middleware/auth.middleware';
+import { restrictTo } from '../../middleware/role.middleware';
 
 const router = Router();
 
@@ -39,7 +48,15 @@ const router = Router();
  *       210:
  *         description: Tenant provisioned successfully
  */
-router.post('/onboarding', createTenantOnboarding);
+router.post('/onboarding', resolveUserOptional, createTenantOnboarding);
+router.get('/requests/check', checkRequestStatus);
+
+// Super Admin protected endpoints to review registration requests
+router.get('/requests', protect, restrictTo('ADMIN'), getTenantRequests);
+router.get('/', protect, restrictTo('ADMIN'), getTenants);
+router.post('/requests/:id/approve', protect, restrictTo('ADMIN'), approveTenantRequest);
+router.post('/requests/:id/reject', protect, restrictTo('ADMIN'), rejectTenantRequest);
+router.get('/admin-dashboard-data', protect, restrictTo('ADMIN'), getAdminDashboardData);
 
 /**
  * @swagger

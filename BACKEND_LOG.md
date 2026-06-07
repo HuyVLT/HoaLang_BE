@@ -23,6 +23,57 @@ Hệ thống Backend của HoaLang được viết trên nền tảng **Express 
 
 ## 2. Nhật ký Thay đổi chi tiết (Changelog)
 
+### [2026-06-04] Integrated Cloudinary Image Uploads for Tenant Onboarding
+
+#### Tác vụ hoàn thành
+- **Tích hợp tải ảnh base64 trực tiếp lên Cloudinary**:
+  - Viết thêm hàm tiện ích `uploadBase64ToCloudinary` trong [cloudinary.ts](file:///c:/Project%20Web/Multi-Tenant/HoaLang/hoalang-be/src/utils/cloudinary.ts) để giải quyết việc tải dữ liệu ảnh base64 dạng Data URI trực tiếp lên dịch vụ lưu trữ đám mây Cloudinary.
+  - Cấu hình cơ chế gọi `dotenv.config()` và nạp cấu hình `cloudinary.config` động (lazy-loaded) tại thời điểm gọi hàm để tránh hoàn toàn các lỗi import hoisting trong môi trường ES Modules / TS-Node.
+- **Tự động chuyển đổi ảnh base64 thành link Cloudinary HTTPS**:
+  - Cập nhật hàm `createTenantOnboarding` trong [onboarding.controller.ts](file:///c:/Project%20Web/Multi-Tenant/HoaLang/hoalang-be/src/modules/tenantConfig/onboarding.controller.ts) để chủ động kiểm tra dữ liệu ảnh logo và ảnh bìa. Nếu phát hiện dữ liệu base64 (`data:image`), hệ thống sẽ tải lên Cloudinary và lưu link HTTPS sạch vào cơ sở dữ liệu thay vì chuỗi base64 thô.
+  - Cài đặt cơ chế Try-Catch an toàn: nếu Cloudinary gặp lỗi xác thực hoặc ngoại tuyến, hệ thống sẽ ghi nhận cảnh báo và tự động chuyển hướng về lưu base64 trực tiếp trong DB lõi để đảm bảo dịch vụ không bị gián đoạn.
+
+#### Chi tiết kỹ thuật & File thay đổi
+1. **Cloudinary Utility**:
+   - Sửa đổi trong [cloudinary.ts](file:///c:/Project%20Web/Multi-Tenant/HoaLang/hoalang-be/src/utils/cloudinary.ts) để thêm hàm upload và cấu hình động.
+2. **Onboarding Controller**:
+   - Sửa đổi trong [onboarding.controller.ts](file:///c:/Project%20Web/Multi-Tenant/HoaLang/hoalang-be/src/modules/tenantConfig/onboarding.controller.ts) để tích hợp luồng xử lý và upload ảnh.
+
+---
+
+### [2026-06-04] Fixed Onboarding Image Size Limits & Tenant Landing Page Templates
+
+#### Tác vụ hoàn thành
+- **Tăng giới hạn kích thước gói dữ liệu gửi lên (Body Parser Limit) của Express**:
+  - Tích hợp thêm thuộc tính `limit: '50mb'` cho cả hai middleware `express.json` và `express.urlencoded` ở cổng khởi chạy chính của backend. Sự thay đổi này cho phép hệ thống phân tích cú pháp (parse) thành công các chuỗi mã hóa base64 kích thước lớn của ảnh logo và ảnh bìa (cover/hero banner) được người dùng gửi từ giao diện Onboarding.
+  - Ngăn ngừa tình trạng lỗi `413 Payload Too Large` khi nộp hồ sơ, giúp lưu giữ đầy đủ dữ liệu ảnh gốc vào MongoDB thay vì bị loại bỏ hoặc rơi vào trạng thái mô phỏng giả lập.
+- **Khắc phục lỗi gán sai Template mặc định khi khởi tạo Cơ sở dữ liệu của Tenant**:
+  - Cập nhật hàm `createTenant` trong lớp `ProvisioningService` để nhận trực tiếp thuộc tính `templateId` (e.g. `silk-template`, `pottery-template`) từ luồng phê duyệt của Super Admin.
+  - Sửa lỗi seeder luôn tự động cấu hình template mặc định `minimal-template` cho tất cả các làng nghề mới phê duyệt do truyền nhầm `slug` của tenant làm tham số tra cứu mẫu template.
+
+#### Chi tiết kỹ thuật & File thay đổi
+1. **Express Server Config**:
+   - Sửa đổi trong [app.ts](file:///c:/Project%20Web/Multi-Tenant/HoaLang/hoalang-be/src/app.ts) để tăng giới hạn dung lượng tải lên 50MB.
+2. **Tenant Provisioning Module**:
+   - Sửa đổi trong [provisioning.service.ts](file:///c:/Project%20Web/Multi-Tenant/HoaLang/hoalang-be/src/modules/tenantProvisioning/provisioning.service.ts) để hỗ trợ tham số `templateId` trong hàm `createTenant` và seeder khởi tạo.
+3. **Onboarding Controller**:
+   - Sửa đổi trong [onboarding.controller.ts](file:///c:/Project%20Web/Multi-Tenant/HoaLang/hoalang-be/src/modules/tenantConfig/onboarding.controller.ts) để chuyển tiếp `templateId` từ bản ghi đăng ký sang cho dịch vụ cấp phát database.
+
+---
+
+### [2026-06-04] Fixed Vietnamese Diacritics Split/Kerning Bug in Email Templates
+
+#### Tác vụ hoàn thành
+- **Sửa lỗi hiển thị phông chữ bị tách rời / khoảng trống đối với chữ tiếng Việt có dấu trong email**:
+  - Phát hiện và khắc phục sự cố hiển thị chữ tiếng Việt có dấu (ví dụ: `Tóm tắ t hồ sơ`) tại các tiêu đề `h4` trong email HTML gửi đi từ backend. Nguyên nhân là do kết hợp `font-style: italic` với phông chữ display serif (`Cormorant Garamond` / `Georgia` fallback) dẫn đến việc các trình duyệt hoặc trình đọc email (như Gmail) không hiển thị được đúng khoảng cách (kerning) của ký tự diacritic.
+  - Sửa đổi thuộc tính CSS của tiêu đề `h4` để tự động tắt kiểu chữ nghiêng (`font-style: normal`) và chuyển sang in đậm (`font-weight: 600`) cho phiên bản Tiếng Việt, trong khi giữ nguyên chữ nghiêng (`font-style: italic`) cho phiên bản Tiếng Anh.
+
+#### Chi tiết kỹ thuật & File thay đổi
+1. **Mailer Utilities**:
+   - Sửa đổi trong [mailer.ts](file:///c:/Project%20Web/Multi-Tenant/HoaLang/hoalang-be/src/utils/mailer.ts) để điều chỉnh động các thuộc tính `font-style` và `font-weight` trong template email HTML của các hàm `sendTenantApprovalEmail`, `sendOnboardingSubmissionEmail` và `sendTenantRejectionEmail`.
+
+---
+
 ### [2026-06-03] Update Domain Configuration Suffix from .vn to .site
 
 #### Tác vụ hoàn thành
@@ -540,3 +591,68 @@ Hệ thống Backend của HoaLang được viết trên nền tảng **Express 
    - Sửa đổi [Dockerfile](file:///c:/Project%20Web/Multi-Tenant/HoaLang/hoalang-be/Dockerfile): Thay thế toàn bộ các tiến trình cài đặt của `pnpm` bằng `npm` tương ứng với cờ `--legacy-peer-deps` để giải quyết xung đột peer dependency và build mã nguồn bằng `npm run build`.
 3. **Lockfile Switch**:
    - Xóa bỏ `pnpm-lock.yaml` và sinh mới thành công `package-lock.json`.
+
+---
+
+### [2026-06-04] Onboarding Email Notifications System, Idempotent Approval Retry, and Rejection Reason Modal Integration
+
+#### Tác vụ hoàn thành
+- **Tối ưu tính Idempotency cho luồng Phê duyệt**: Sửa đổi `approveTenantRequest` trong `onboarding.controller.ts` để xử lý retry an toàn. Nếu Tenant đã tồn tại từ một lần phê duyệt thất bại trước đó nhưng trạng thái đơn đăng ký vẫn là `PENDING`, bỏ qua bước tạo tenant mới và phục hồi lại việc cấu hình PageConfig/User/UserTenantRole thay vì báo lỗi trùng lặp.
+- **Gửi Email Xác Nhận và Từ Chối**:
+  - Gửi email xác nhận nộp đơn thành công ngay sau khi nhận hồ sơ (`createTenantOnboarding`).
+  - Gửi email từ chối đăng ký kèm lý do được nhập trực tiếp bởi Super Admin (`rejectTenantRequest`).
+  - Gửi email thông báo phê duyệt cho cả người dùng mới và người dùng hiện tại (người dùng cũ dùng mật khẩu hiện tại, người dùng mới tự sinh mật khẩu) trong `approveTenantRequest`.
+
+#### Chi tiết kỹ thuật & File thay đổi
+1. **Onboarding Controller**:
+   - Sửa đổi [onboarding.controller.ts](file:///c:/Project%20Web/Multi-Tenant/HoaLang/hoalang-be/src/modules/tenantConfig/onboarding.controller.ts) để hoàn tất tính năng phê duyệt idempotent và gọi gửi email.
+
+---
+
+### [2026-06-04] Secure Onboarding Approvals & Active DNS Domain Verification
+
+#### Tác vụ hoàn thành
+- **Tối ưu hóa Bảo mật và Tránh lộ Mật khẩu**: Xóa bỏ thuộc tính `password` trong đối tượng `ownerUser` trả về từ API `/approve` ở controller `approveTenantRequest` để đảm bảo Super Admin không thể xem mật khẩu tài khoản của Tenant. Mật khẩu tài khoản chỉ được gửi trực tiếp đến địa chỉ email đăng ký của Tenant.
+- **Tích Hợp Xác Minh Tên Miền Email Thực Tế**:
+  - Tích hợp kiểm tra cú pháp định dạng email và DNS resolver (kiểm tra các bản ghi MX và bản ghi A qua module `dns` của Node.js) khi đối tác nộp đơn qua API `/onboarding` để xác minh địa chỉ email là có thật và đang hoạt động.
+  - Cho phép bỏ qua kiểm tra DNS với các tên miền thử nghiệm/nội bộ (`localhost`, `test.com`, `example.com`, `hoalang.site`, `domain.com`).
+
+#### Chi tiết kỹ thuật & File thay đổi
+1. **Onboarding Controller**:
+   - Sửa đổi [onboarding.controller.ts](file:///c:/Project%20Web/Multi-Tenant/HoaLang/hoalang-be/src/modules/tenantConfig/onboarding.controller.ts) bổ sung helper `validateEmailDomain` và thực hiện xác thực email.
+2. **Email Template**:
+   - Sửa đổi [mailer.ts](file:///c:/Project%20Web/Multi-Tenant/HoaLang/hoalang-be/src/utils/mailer.ts) đổi nhãn "Mật khẩu khởi tạo" thành "Mật khẩu".
+
+---
+
+### [2026-06-04] Bugfix: 401 "Chưa kích hoạt" khi Tenant Owner đăng nhập lần đầu
+
+#### Tác vụ hoàn thành
+- **Phát hiện và vá lỗi nghiêm trọng**: Tài khoản `VILLAGE_OWNER` được tạo tự động trong luồng phê duyệt `approveTenantRequest` bị từ chối đăng nhập với `401 Unauthorized` — "Tài khoản chưa được kích hoạt".
+- **Nguyên nhân gốc**: `passport.ts` kiểm tra `user.isVerified` trước khi xác thực mật khẩu. Khi `User.create(...)` không có `isVerified: true`, giá trị mặc định `false` khiến Passport từ chối đăng nhập dù mật khẩu đúng.
+- **Sửa — Nhánh người dùng mới**: Bổ sung `isVerified: true` và `verificationExpiresAt: undefined` vào `User.create(...)`.
+- **Sửa — Nhánh người dùng hiện tại**: Bổ sung kiểm tra `if (!user.isVerified)` và tự động kích hoạt khi admin phê duyệt.
+
+#### Chi tiết kỹ thuật & File thay đổi
+1. **[onboarding.controller.ts](file:///c:/Project%20Web/Multi-Tenant/HoaLang/hoalang-be/src/modules/tenantConfig/onboarding.controller.ts)**:
+   - `User.create(...)`: thêm `isVerified: true`, `verificationExpiresAt: undefined`.
+   - Nhánh `else` (existing user): thêm `if (!user.isVerified) { user.isVerified = true; ... }`.
+
+#### Lưu ý
+- Tài khoản Tenant Owner không cần xác minh email thủ công — phê duyệt của Super Admin là đủ điều kiện.
+- Tài khoản bị ảnh hưởng trước khi hotfix: cần cập nhật `isVerified: true` trực tiếp trong DB hoặc tái phê duyệt qua luồng idempotent.
+
+---
+
+### [2026-06-04] Bugfix: Tránh Hash Mật Khẩu 2 Lần (Double-Hash) Khi Tạo User Mới
+
+#### Tác vụ hoàn thành
+- **Sửa lỗi đăng nhập thất bại do mật khẩu sai**: Sửa lỗi sinh mật khẩu ngẫu nhiên trong luồng phê duyệt nhưng bị mã hóa hai lần (một lần thủ công bằng `bcrypt.hash()` trong controller và một lần tự động bởi pre-save hook của schema `User.model.ts`). Việc này dẫn đến mật khẩu thực tế lưu trong MongoDB không trùng khớp với mật khẩu thô gửi đến email của Tenant Owner.
+- **Giải pháp**:
+  - Loại bỏ các bước sinh salt và hash mật khẩu thủ công bằng `bcrypt` trong `approveTenantRequest` của `onboarding.controller.ts`.
+  - Truyền trực tiếp mật khẩu dạng thô (plain-text generated password) vào hàm `User.create(...)` để Mongoose pre-save hook thực hiện mã hóa đúng một lần duy nhất.
+  - Xóa dòng import thư viện `bcrypt` dư thừa trong `onboarding.controller.ts` để giữ cho mã nguồn không có cảnh báo dư thừa.
+
+#### Chi tiết kỹ thuật & File thay đổi
+1. **[onboarding.controller.ts](file:///c:/Project%20Web/Multi-Tenant/HoaLang/hoalang-be/src/modules/tenantConfig/onboarding.controller.ts)**: Loại bỏ `bcrypt.hash` thủ công, truyền plain password, xóa import `bcrypt`.
+
